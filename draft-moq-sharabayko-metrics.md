@@ -8,18 +8,18 @@ submissiontype: independent  # also: "independent", "IAB", or "IRTF"
 number: 00
 date:
 v: 3
-workgroup: moq
+# workgroup: moq
 keyword:
  - next generation
  - unicorn
  - sparkling distributed ledger
 venue:
-  group: moq
-  type: Working Group
-  mail: moq@ietf.org
-  arch: https://example.com/WG
-  github: USER/REPO
-  latest: https://example.com/LATEST
+#  group: moq
+#  type: Working Group
+#  mail: moq@ietf.org
+#  arch: https://example.com/WG
+  github: "maxsharabayko/ietf-moq-metrics"
+  latest: "https://maxsharabayko.github.io/ietf-moq-metrics/draft-moq-sharabayko-metrics.html"
 
 author:
   -

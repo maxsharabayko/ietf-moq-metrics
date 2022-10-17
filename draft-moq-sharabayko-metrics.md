@@ -19,35 +19,34 @@
 # Change the file extension to match the format (.xml for XML, etc...)
 #
 ###
-title: "TODO - Your title"
-abbrev: "TODO - Abbreviation"
+title: "Estimating Latency and Jitter on a QUIC Datagram Connection."
+abbrev: "quic-delay"
 category: info
 
 docname: draft-moq-sharabayko-metrics-latest
 submissiontype: independent  # also: "independent", "IAB", or "IRTF"
-number:
+number: 00
 date:
-consensus: true
 v: 3
-area: AREA
 workgroup: moq
 keyword:
  - next generation
  - unicorn
  - sparkling distributed ledger
 venue:
-  group: WG
+  group: moq
   type: Working Group
-  mail: WG@example.com
+  mail: moq@ietf.org
   arch: https://example.com/WG
   github: USER/REPO
   latest: https://example.com/LATEST
 
 author:
- -
-    fullname: Your Name Here
-    organization: Your Organization Here
-    email: your.email@example.com
+  -
+    ins: "M.P. Sharabayko"
+    fullname: "Maxim Sharabayko"
+    organization: "Haivision Network Video, GmbH"
+    email: maxsharabayko@haivision.com
 
 normative:
 

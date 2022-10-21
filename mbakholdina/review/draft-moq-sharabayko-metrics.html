@@ -8,7 +8,9 @@
 <meta content="Maxim Sharabayko" name="author">
 <meta content="Maria Sharabayko" name="author">
 <meta content="
-       TODO Abstract 
+       This document defines an approach of objectively measuring the transmission delay, jitter, and other performance metrics
+for a QUIC   connection using an artificially generated payload of a specific structure. 
+       TODO (Maxim): at an application level? 
     " name="description">
 <meta content="xml2rfc 3.15.1" name="generator">
 <meta content="next generation" name="keyword">
@@ -1060,7 +1062,7 @@ svg :is([stroke="fill"], [fill^="#fff"]) {
 <dd class="category">Informational</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2022-10-20" class="published">20 October 2022</time>
+<time datetime="2022-10-21" class="published">21 October 2022</time>
     </dd>
 <dt class="label-issn">ISSN:</dt>
 <dd class="issn">2070-1721</dd>
@@ -1081,7 +1083,9 @@ svg :is([stroke="fill"], [fill^="#fff"]) {
 <h1 id="title">Estimating Transmission Delay, Jitter, and Other Metrics on a QUIC Connection.</h1>
 <section id="section-abstract">
       <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
-<p id="section-abstract-1">TODO Abstract<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-1">This document defines an approach of objectively measuring the transmission delay, jitter, and other performance metrics
+for a QUIC <span>[<a href="#RFC9000" class="cite xref">RFC9000</a>]</span> connection using an artificially generated payload of a specific structure.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">TODO (Maxim): at an application level?<a href="#section-abstract-2" class="pilcrow">¶</a></p>
 </section>
 <div id="status-of-memo">
 <section id="section-boilerplate.1">
@@ -1139,54 +1143,51 @@ svg :is([stroke="fill"], [fill^="#fff"]) {
             <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-conventions-and-definitions" class="internal xref">Conventions and Definitions</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
-            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-test-setup" class="internal xref">Test Setup</a></p>
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-payload-format" class="internal xref">Payload Format</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
-            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-payload-format" class="internal xref">Payload Format</a></p>
-</li>
-          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
-            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-performance-metrics" class="internal xref">Performance Metrics</a></p>
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-performance-metrics" class="internal xref">Performance Metrics</a></p>
 <ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
-                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-transmission-delay" class="internal xref">Transmission Delay</a></p>
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-transmission-delay" class="internal xref">Transmission Delay</a></p>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
-                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-interarrival-jitter" class="internal xref">Interarrival Jitter</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-interarrival-jitter" class="internal xref">Interarrival Jitter</a></p>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3">
-                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="auto internal xref">5.3</a>.  <a href="#name-time-stamped-delay-factor-t" class="internal xref">Time-Stamped Delay Factor (TS-DF)</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-time-stamped-delay-factor-t" class="internal xref">Time-Stamped Delay Factor (TS-DF)</a></p>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.4">
-                <p id="section-toc.1-1.5.2.4.1"><a href="#section-5.4" class="auto internal xref">5.4</a>.  <a href="#name-total-number-of-received-pa" class="internal xref">Total Number of Received Payloads</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4">
+                <p id="section-toc.1-1.4.2.4.1"><a href="#section-4.4" class="auto internal xref">4.4</a>.  <a href="#name-total-number-of-received-pa" class="internal xref">Total Number of Received Payloads</a></p>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.5">
-                <p id="section-toc.1-1.5.2.5.1"><a href="#section-5.5" class="auto internal xref">5.5</a>.  <a href="#name-total-number-of-missing-pay" class="internal xref">Total Number of Missing Payloads</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.5">
+                <p id="section-toc.1-1.4.2.5.1"><a href="#section-4.5" class="auto internal xref">4.5</a>.  <a href="#name-total-number-of-missing-pay" class="internal xref">Total Number of Missing Payloads</a></p>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.6">
-                <p id="section-toc.1-1.5.2.6.1"><a href="#section-5.6" class="auto internal xref">5.6</a>.  <a href="#name-total-number-of-reordered-p" class="internal xref">Total Number of Reordered Packets and Reordering Distance</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.6">
+                <p id="section-toc.1-1.4.2.6.1"><a href="#section-4.6" class="auto internal xref">4.6</a>.  <a href="#name-total-number-of-reordered-p" class="internal xref">Total Number of Reordered Payloads and Reordering Distance</a></p>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.7">
-                <p id="section-toc.1-1.5.2.7.1"><a href="#section-5.7" class="auto internal xref">5.7</a>.  <a href="#name-the-number-of-malformed-pay" class="internal xref">The Number of Malformed Payloads</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.7">
+                <p id="section-toc.1-1.4.2.7.1"><a href="#section-4.7" class="auto internal xref">4.7</a>.  <a href="#name-the-number-of-corrupted-pay" class="internal xref">The Number of Corrupted Payloads</a></p>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.8">
-                <p id="section-toc.1-1.5.2.8.1"><a href="#section-5.8" class="auto internal xref">5.8</a>.  <a href="#name-the-number-of-duplicated-pa" class="internal xref">The Number of Duplicated Payloads</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.8">
+                <p id="section-toc.1-1.4.2.8.1"><a href="#section-4.8" class="auto internal xref">4.8</a>.  <a href="#name-the-number-of-duplicated-pa" class="internal xref">The Number of Duplicated Payloads</a></p>
 </li>
             </ul>
 </li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
-            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
-            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
-            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+            <p id="section-toc.1-1.8.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
-            <p id="section-toc.1-1.9.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
-</li>
-          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
-            <p id="section-toc.1-1.10.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+            <p id="section-toc.1-1.9.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
 </li>
         </ul>
 </nav>
@@ -1197,26 +1198,32 @@ svg :is([stroke="fill"], [fill^="#fff"]) {
       <h2 id="name-introduction">
 <a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
       </h2>
-<p id="section-1-1">TODO: Media over QUIC has emerged.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-1">TODO (Maria): Media over QUIC has emerged.<a href="#section-1-1" class="pilcrow">¶</a></p>
 <p id="section-1-2">For live media contribution when processing of data takes place in real time,
 it is important to estimate packets transmission delays and delay variation (or jitter),
-determine data loss and reordering as well as calculate other performance metrics <a href="#performance-metrics" class="auto internal xref">Section 5</a>.<a href="#section-1-2" class="pilcrow">¶</a></p>
+determine data loss and reordering as well as calculate other performance metrics <a href="#performance-metrics" class="auto internal xref">Section 4</a>.<a href="#section-1-2" class="pilcrow">¶</a></p>
 <p id="section-1-3">(??) The less jitter is observed, the less buffer a decoder must have, and the more confidence in a transmission latency
 constraints can be gained and utilized.<a href="#section-1-3" class="pilcrow">¶</a></p>
-<p id="section-1-4">The current draft discusses the approach of (??) objectively measuring the performance metrics of QUIC connections (both STREAMS and DATAGRAMS)
-using an artificially generated payload.<a href="#section-1-4" class="pilcrow">¶</a></p>
-<p id="section-1-5">This approach could be used during the Media over QUIC protocol development to:<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-4">The current draft discusses an approach of objectively measuring the transmission delay, jitter, and other performance metrics <a href="#performance-metrics" class="auto internal xref">Section 4</a>
+for a QUIC <span>[<a href="#RFC9000" class="cite xref">RFC9000</a>]</span> connection using an artificially generated payload of a specific structure <a href="#payload-format" class="auto internal xref">Section 3</a>.
+Both streams <span>[<a href="#RFC9000" class="cite xref">RFC9000</a>]</span> and unreliable datagrams <span>[<a href="#RFC9221" class="cite xref">RFC9221</a>]</span> are going to be supported, however, for the time being performance metrics <a href="#performance-metrics" class="auto internal xref">Section 4</a> are defined for datagrams only.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">TODO (Maxim):  at an application level, application protocol level<a href="#section-1-5" class="pilcrow">¶</a></p>
+<p id="section-1-6">The suggested approach could be used during the Media over QUIC protocol development to:<a href="#section-1-6" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-1-6.1">evaluate the STREAMS versus DATAGRAMS performance and efficiency,<a href="#section-1-6.1" class="pilcrow">¶</a>
+<li class="normal" id="section-1-7.1">compare the independent implementations of the protocol and/or perform regression testing of the same implementation,<a href="#section-1-7.1" class="pilcrow">¶</a>
 </li>
-        <li class="normal" id="section-1-6.2">compare the independent implementations of the Media over QUIC protocol or perform regression testing of the same implementation,<a href="#section-1-6.2" class="pilcrow">¶</a>
+        <li class="normal" id="section-1-7.2">evaluate various congestion control schemes considered for including in the protocol,<a href="#section-1-7.2" class="pilcrow">¶</a>
 </li>
-        <li class="normal" id="section-1-6.3">evaluate various congestion control schemes considered for implementation.<a href="#section-1-6.3" class="pilcrow">¶</a>
+        <li class="normal" id="section-1-7.3">evaluate protocol performance and transmission efficiency using either STREAM or DATAGRAM frames.<a href="#section-1-7.3" class="pilcrow">¶</a>
 </li>
       </ul>
-<p id="section-1-7">(??) The same approach can be used for the other protocols, why not to say about it<a href="#section-1-7" class="pilcrow">¶</a></p>
-<p id="section-1-8">(?? Why not to simply use QUIC statistics provided by the library. Provide motivation for these<a href="#section-1-8" class="pilcrow">¶</a></p>
-<p id="section-1-9">(??) Are we going to add links to the srt-xtransmit application as an example of implementation<a href="#section-1-9" class="pilcrow">¶</a></p>
+<p id="section-1-8">TODO (Maria or later): Why not to simply use QUIC statistics provided by the library. Provide motivation for these<a href="#section-1-8" class="pilcrow">¶</a></p>
+<p id="section-1-9">// When a QUIC endpoint receives a valid DATAGRAM frame, it <span class="bcp14">SHOULD</span>
+   deliver the data to the application immediately, as long as it is
+   able to process the frame and can store the contents in memory.<a href="#section-1-9" class="pilcrow">¶</a></p>
+<p id="section-1-10">TODO (Maxim):
+- Idea of generating payloads of variable length to emulate I, P, B frames and different scenarious.
+- We need a method to compare streams and datagrams at the same amount of data -&gt; message number, groups of datagrams.<a href="#section-1-10" class="pilcrow">¶</a></p>
 <div id="requirements-notation">
 <section id="section-1.1">
         <h3 id="name-requirements-notation">
@@ -1240,24 +1247,16 @@ described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</s
 appear in all capitals, as shown here.<a href="#section-2-1" class="pilcrow">¶</a></p>
 </section>
 </div>
-<div id="test-setup">
-<section id="section-3">
-      <h2 id="name-test-setup">
-<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-test-setup" class="section-name selfRef">Test Setup</a>
-      </h2>
-<p id="section-3-1">TODO: Some scheme is missing<a href="#section-3-1" class="pilcrow">¶</a></p>
-</section>
-</div>
 <div id="payload-format">
-<section id="section-4">
+<section id="section-3">
       <h2 id="name-payload-format">
-<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-payload-format" class="section-name selfRef">Payload Format</a>
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-payload-format" class="section-name selfRef">Payload Format</a>
       </h2>
-<p id="section-4-1">The payload of a specific format <a href="#payload-structure" class="auto internal xref">Figure 1</a> <span class="bcp14">MUST</span> be artificially generated
-for each STREAM or DATAGRAM packet (TODO: ? when sending a packet) to enable performance metrics calculation at the receiver side.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-3-1">A payload of a specific format <a href="#payload-structure" class="auto internal xref">Figure 1</a> <span class="bcp14">MUST</span> be artificially generated
+to enable performance metrics calculation at the receiver side.<a href="#section-3-1" class="pilcrow">¶</a></p>
 <span id="name-payload-structure"></span><div id="payload-structure">
 <figure id="figure-1">
-        <div class="alignLeft art-text artwork" id="section-4-2.1">
+        <div class="alignLeft art-text artwork" id="section-3-2.1">
 <pre>
    0                   1                   2                   3
    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -1265,7 +1264,7 @@ for each STREAM or DATAGRAM packet (TODO: ? when sending a packet) to enable per
   |                     Payload Sequence Number                   |
   |                           (64 bit)                            |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                       NTP 64-bit Timestamp                    |
+  |                       NTP 64-Bit Timestamp                    |
   |                           (64 bit)                            |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |                    Monotonic Clock Timestamp                  |
@@ -1289,203 +1288,198 @@ for each STREAM or DATAGRAM packet (TODO: ? when sending a packet) to enable per
 <a href="#name-payload-structure" class="selfRef">Payload Structure</a>
         </figcaption></figure>
 </div>
-<span class="break"></span><dl class="dlParallel" id="section-4-3">
-        <dt id="section-4-3.1">Payload Sequence Number: 64 bits.</dt>
-        <dd style="margin-left: 1.5em" id="section-4-3.2">
-          <p id="section-4-3.2.1">A sequential number of the payload. Starts from zero and is incremented for every payload that follows.<a href="#section-4-3.2.1" class="pilcrow">¶</a></p>
-</dd>
-      <dd class="break"></dd>
-</dl>
-<p id="section-4-4">(??) packet instead of payload<a href="#section-4-4" class="pilcrow">¶</a></p>
-<span class="break"></span><dl class="dlParallel" id="section-4-5">
-        <dt id="section-4-5.1">NTP 64-bit Timestamp: 64 bits.</dt>
-        <dd style="margin-left: 1.5em" id="section-4-5.2">
-          <p id="section-4-5.2.1">NTP 64-bit (?? system clock) timestamp <span>[<a href="#RFC5905" class="cite xref">RFC5905</a>]</span> <span>[<a href="#RFC8877" class="cite xref">RFC8877</a>]</span> of the moment the payload has been generated
-meaning payload generation has finished. (?? delete: System clock.)<a href="#section-4-5.2.1" class="pilcrow">¶</a></p>
-</dd>
-      <dd class="break"></dd>
-</dl>
-<p id="section-4-6">(??) NTP 64-Bit Timestamp - why 64-bit is here?<a href="#section-4-6" class="pilcrow">¶</a></p>
-<span class="break"></span><dl class="dlParallel" id="section-4-7">
-        <dt id="section-4-7.1">Monotonic Clock Timestamp: 64 bits.</dt>
-        <dd style="margin-left: 1.5em" id="section-4-7.2">
-          <p id="section-4-7.2.1">Monotonic clock timestamp of the moment the payload has been generated.
-Represents microseconds elapsed since (?? the last) monotonic clock epoch.<a href="#section-4-7.2.1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-3-3">
+        <dt id="section-3-3.1">Payload Sequence Number: 64 bits.</dt>
+        <dd style="margin-left: 1.5em" id="section-3-3.2">
+          <p id="section-3-3.2.1">A sequential number of the payload. Starts from zero and is incremented for every payload that follows.<a href="#section-3-3.2.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
-<dt id="section-4-7.3">Payload Length: 32 bits.</dt>
-        <dd style="margin-left: 1.5em" id="section-4-7.4">
-          <p id="section-4-7.4.1">The full length of the payload (including preceding "Payload Sequence Number" and both timestamp fields).<a href="#section-4-7.4.1" class="pilcrow">¶</a></p>
+<dt id="section-3-3.3">NTP 64-Bit Timestamp: 64 bits.</dt>
+        <dd style="margin-left: 1.5em" id="section-3-3.4">
+          <p id="section-3-3.4.1">NTP 64-bit (?? system clock) timestamp <span>[<a href="#RFC5905" class="cite xref">RFC5905</a>]</span> <span>[<a href="#RFC8877" class="cite xref">RFC8877</a>]</span> of the moment when a payload has been generated
+meaning the payload generation has finished. (?? delete: System clock.)<a href="#section-3-3.4.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
-<dt id="section-4-7.5">MD5 Checksum: 128 bits.</dt>
-        <dd style="margin-left: 1.5em" id="section-4-7.6">
-          <p id="section-4-7.6.1">A hash value to confirm the payload integrity. Calculated for the whole message with the SHA-128 checksum field
-zeroed out (?? what does it mean - zeroed out).<a href="#section-4-7.6.1" class="pilcrow">¶</a></p>
+<dt id="section-3-3.5">Monotonic Clock Timestamp: 64 bits.</dt>
+        <dd style="margin-left: 1.5em" id="section-3-3.6">
+          <p id="section-3-3.6.1">Monotonic clock timestamp of the moment when a payload has been generated.
+Represents microseconds elapsed since monotonic clock epoch.<a href="#section-3-3.6.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
-<dt id="section-4-7.7">Remaining Payload: variable length.</dt>
-        <dd style="margin-left: 1.5em" id="section-4-7.8">
-          <p id="section-4-7.8.1">The remaining payload is generated to form the whole DATAGRAM packet of the whole STREAM (?? what does it mean - I don't like "whole", maybe "complete").
+<dt id="section-3-3.7">Payload Length: 32 bits.</dt>
+        <dd style="margin-left: 1.5em" id="section-3-3.8">
+          <p id="section-3-3.8.1">The full length of the payload (including preceding "Payload Sequence Number" and both timestamp fields).<a href="#section-3-3.8.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-3.9">MD5 Checksum: 128 bits.</dt>
+        <dd style="margin-left: 1.5em" id="section-3-3.10">
+          <p id="section-3-3.10.1">A hash value to confirm the payload integrity. Calculated for the whole message with the SHA-128 checksum field
+zeroed out.<a href="#section-3-3.10.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-3.11">Remaining Payload: variable length.</dt>
+        <dd style="margin-left: 1.5em" id="section-3-3.12">
+          <p id="section-3-3.12.1">The remaining payload of variable length.
 Randomly generated sequence of bytes. <span class="bcp14">MAY</span> be generated as a sequence of 8-bit integers
 starting with value of the remainder after dividing the Payload Sequence Number by 32
-and followed by sequentially increasing values.<a href="#section-4-7.8.1" class="pilcrow">¶</a></p>
+and followed by sequentially increasing values.<a href="#section-3-3.12.1" class="pilcrow">¶</a></p>
 </dd>
       <dd class="break"></dd>
 </dl>
-<p id="section-4-8">In the case of QUIC DATAGRAM, the payload size <span class="bcp14">MUST</span> fit exactly into a single DATAGRAM (?? frame).
-The "Payload Sequence Number" <span class="bcp14">MUST</span> be increased for each sent DATAGRAM.<a href="#section-4-8" class="pilcrow">¶</a></p>
-<p id="section-4-9">In the case of QUIC STREAMS, the payload size <span class="bcp14">MUST</span> form the whole STREAM (?? again "whole).<a href="#section-4-9" class="pilcrow">¶</a></p>
+<p id="section-3-4">In the case of QUIC streams, the payload can be as long as the specified stream length and <span class="bcp14">MUST</span> fit within the stream.
+As stream data is sent in the form of STREAM frames, the very first frame will contain
+Payload Sequence Number, NTP 64-Bit Timestamp, Monotonic Clock Timestamp, Payload Length, and
+MD5 Checksum fields, as well as some of the remaining payload data. Consequent STREAM frames will carry the rest of the payload.<a href="#section-3-4" class="pilcrow">¶</a></p>
+<p id="section-3-5">In the case of QUIC datagrams, the payload <span class="bcp14">MUST</span> fit into a single DATAGRAM frame.
+The Payload Sequence Number field <span class="bcp14">MUST</span> be increased for each sent DATAGRAM frame.<a href="#section-3-5" class="pilcrow">¶</a></p>
+<p id="section-3-6">TODO (Maxim): Messages !!! Then change a bit the text above.<a href="#section-3-6" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="performance-metrics">
-<section id="section-5">
+<section id="section-4">
       <h2 id="name-performance-metrics">
-<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-performance-metrics" class="section-name selfRef">Performance Metrics</a>
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-performance-metrics" class="section-name selfRef">Performance Metrics</a>
       </h2>
-<p id="section-5-1">The calculation of the following metrics is suggested to be included in the scope:<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-4-1">The calculation of the following metrics is suggested to be included in the scope:<a href="#section-4-1" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-5-2.1">Transmission Delay (or Latency) <a href="#transmission-delay" class="auto internal xref">Section 5.1</a>,<a href="#section-5-2.1" class="pilcrow">¶</a>
+<li class="normal" id="section-4-2.1">Transmission Delay (or Latency) <a href="#transmission-delay" class="auto internal xref">Section 4.1</a>,<a href="#section-4-2.1" class="pilcrow">¶</a>
 </li>
-        <li class="normal" id="section-5-2.2">Interarrival Jitter as per <span>[<a href="#RFC3550" class="cite xref">RFC3550</a>]</span> <a href="#jitter-rfc3550" class="auto internal xref">Section 5.2</a>,<a href="#section-5-2.2" class="pilcrow">¶</a>
+        <li class="normal" id="section-4-2.2">Interarrival Jitter as per <span>[<a href="#RFC3550" class="cite xref">RFC3550</a>]</span> <a href="#jitter-rfc3550" class="auto internal xref">Section 4.2</a>,<a href="#section-4-2.2" class="pilcrow">¶</a>
 </li>
-        <li class="normal" id="section-5-2.3">Time-Stamped Delay Factor (TS-DF) <a href="#ts-df" class="auto internal xref">Section 5.3</a>,<a href="#section-5-2.3" class="pilcrow">¶</a>
+        <li class="normal" id="section-4-2.3">Time-Stamped Delay Factor (TS-DF) <a href="#ts-df" class="auto internal xref">Section 4.3</a>,<a href="#section-4-2.3" class="pilcrow">¶</a>
 </li>
-        <li class="normal" id="section-5-2.4">Total Number of Received Payloads <a href="#received-payloads" class="auto internal xref">Section 5.4</a>,<a href="#section-5-2.4" class="pilcrow">¶</a>
+        <li class="normal" id="section-4-2.4">Total Number of Received Payloads <a href="#received-payloads" class="auto internal xref">Section 4.4</a>,<a href="#section-4-2.4" class="pilcrow">¶</a>
 </li>
-        <li class="normal" id="section-5-2.5">Total Number of Missing Payloads <a href="#missing-payloads" class="auto internal xref">Section 5.5</a>,<a href="#section-5-2.5" class="pilcrow">¶</a>
+        <li class="normal" id="section-4-2.5">Total Number of Missing Payloads <a href="#missing-payloads" class="auto internal xref">Section 4.5</a>,<a href="#section-4-2.5" class="pilcrow">¶</a>
 </li>
-        <li class="normal" id="section-5-2.6">TODO: rest<a href="#section-5-2.6" class="pilcrow">¶</a>
+        <li class="normal" id="section-4-2.6">Total Number of Reordered Payloads and Reordering Distance <a href="#reordered-payloads" class="auto internal xref">Section 4.6</a>,<a href="#section-4-2.6" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-4-2.7">and others metrics as defined below.<a href="#section-4-2.7" class="pilcrow">¶</a>
 </li>
       </ul>
-<p id="section-5-3">(?? What about Throughput)<a href="#section-5-3" class="pilcrow">¶</a></p>
-<p id="section-5-4">TODO: elaborate on this (this is only applied to TS-DF metric) + the concept of measurement period (maybe picture is required)<a href="#section-5-4" class="pilcrow">¶</a></p>
-<p id="section-5-5">The <span class="bcp14">RECOMMENDED</span> measurement period is 1 second, but other values are also possible.<a href="#section-5-5" class="pilcrow">¶</a></p>
+<p id="section-4-3">The <span class="bcp14">RECOMMENDED</span> measurement period is 1 second, however, alternative period length is also possible. This value is dictated by the TS-DF metric specification <span>[<a href="#EBU3337" class="cite xref">EBU3337</a>]</span>.<a href="#section-4-3" class="pilcrow">¶</a></p>
 <div id="transmission-delay">
-<section id="section-5.1">
+<section id="section-4.1">
         <h3 id="name-transmission-delay">
-<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-transmission-delay" class="section-name selfRef">Transmission Delay</a>
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-transmission-delay" class="section-name selfRef">Transmission Delay</a>
         </h3>
-<p id="section-5.1-1">Transmission Delay (or Latency) is measured based on the system clock (NTP 64-bit Timestamp <a href="#payload-structure" class="auto internal xref">Figure 1</a>).
+<p id="section-4.1-1">Transmission Delay (or Latency) is measured based on the system clock (NTP 64-Bit Timestamp <a href="#payload-structure" class="auto internal xref">Figure 1</a>).
 It is <span class="bcp14">RECOMMENDED</span> to synchronize the clocks on both sender and receiver machines before an experiment
-so that  calculated latency values are as close as possible to the observed transmission delays.<a href="#section-5.1-1" class="pilcrow">¶</a></p>
-<p id="section-5.1-2">TODO: Picture is required<a href="#section-5.1-2" class="pilcrow">¶</a></p>
-<p id="section-5.1-3">Transmission Delay (TD) sample is calculated at the receiver side at the moment a payload is received by an application:<a href="#section-5.1-3" class="pilcrow">¶</a></p>
-<div class="alignLeft art-text artwork" id="section-5.1-4">
+so that an error associated with a clock drift is as less as possible.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2">Transmission Delay (TD) sample is calculated at the receiver side at the moment a payload is received by an application:<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.1-3">
 <pre>
-TD = T_NTP_RCV - T_NTP_SND + OFFSET
-</pre><a href="#section-5.1-4" class="pilcrow">¶</a>
+TD = T_NTP_RCV - T_NTP_SND
+</pre><a href="#section-4.1-3" class="pilcrow">¶</a>
 </div>
-<p id="section-5.1-5">where
-- T_NTP_RCV is the time when the payload arrives (??) according to the system clock at the receiver.
-  Note that for QUIC STREAMS, the T_NTP_RCV is the time when the last byte of a stream is received by an application.
-- T_NTP_SND is the NTP 64-bit Timestamp value extracted from the payload,
-- OFFSET is the timing offset which results from the difference in the system time of the two clocks (so called clock drift) at the sender and at the receiver.<a href="#section-5.1-5" class="pilcrow">¶</a></p>
-<p id="section-5.1-6">Minimum (TD_MIN) and maximum (TD_MAX) transmission delay estimates <span class="bcp14">MUST</span> be reset to N/A (?? not defined, maybe 0)
-at the start of each measurement period while the smoothed estimate (TD_SMOOTHED) is calculated during the entire experiment.<a href="#section-5.1-6" class="pilcrow">¶</a></p>
-<div class="alignLeft art-text artwork" id="section-5.1-7">
+<p id="section-4.1-4">where
+- T_NTP_RCV is the system clock time when the payload arrives at the receiver.
+  Note that for QUIC streams, the T_NTP_RCV is the time when the very last byte of a stream is received by an application.
+- T_NTP_SND is the NTP 64-Bit Timestamp value extracted from the payload.<a href="#section-4.1-4" class="pilcrow">¶</a></p>
+<p id="section-4.1-5">Note that TD value will be affected by the clock drift, the difference in the system time of the two clocks at the sender and at the receiver.<a href="#section-4.1-5" class="pilcrow">¶</a></p>
+<p id="section-4.1-6">Minimum (TD_MIN) and maximum (TD_MAX) delay estimates <span class="bcp14">MUST</span> be reset to "not available" (N/A)
+at the start of each measurement period while the smoothed value (TD_SMOOTHED) <span class="bcp14">MUST NOT</span> be reset and the calculation <span class="bcp14">SHOULD</span> continue during the entire experiment.
+Here and throughout the current document, smoothing means applying an exponentially weighted moving average (EWMA).<a href="#section-4.1-6" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.1-7">
 <pre>
 TD_MIN = MIN(TD_MIN, TD);
 TD_MAX = MAX(TD_MAX, TD);
-TD_SMOOTHED = RMA(TD_SMOOTHED, TD).
-</pre><a href="#section-5.1-7" class="pilcrow">¶</a>
+TD_SMOOTHED = EWMA(TD_SMOOTHED, TD).
+</pre><a href="#section-4.1-7" class="pilcrow">¶</a>
 </div>
-<p id="section-5.1-8">TODO: What's RMA? Add formula.
-TODO: Define what's ""smoothed"<a href="#section-5.1-8" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="jitter-rfc3550">
-<section id="section-5.2">
+<section id="section-4.2">
         <h3 id="name-interarrival-jitter">
-<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-interarrival-jitter" class="section-name selfRef">Interarrival Jitter</a>
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-interarrival-jitter" class="section-name selfRef">Interarrival Jitter</a>
         </h3>
-<p id="section-5.2-1">Interarrival Jitter is calculated as defined in <span>[<a href="#RFC3550" class="cite xref">RFC3550</a>]</span>.<a href="#section-5.2-1" class="pilcrow">¶</a></p>
-<p id="section-5.2-2">TODO: Formula, maybe later ...<a href="#section-5.2-2" class="pilcrow">¶</a></p>
-<p id="section-5.2-3">The calculation is based on the Monotonic Clock Timestamp <a href="#payload-structure" class="auto internal xref">Figure 1</a> extracted from the payload.
-(?? TODO: Rephrase) This value is smoothed and <span class="bcp14">MUST NOT</span> be reset at the start of each measurement period.<a href="#section-5.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.2-1">Interarrival Jitter is calculated as defined in <span>[<a href="#RFC3550" class="cite xref">RFC3550</a>]</span>. It is based on the concept of the Relative Transit Time between pairs of consecutive payloads
+received not necessarily in sequence (meaning that reordering is ignored), and is defined to be the smoothed average of the difference in payloads spacing
+at the receiver compared to the sender for a pair of payloads.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2-2">The calculation is based on the Monotonic Clock Timestamp <a href="#payload-structure" class="auto internal xref">Figure 1</a> extracted from the payload. As jitter is calculated as an EWMA of delay variations,
+it <span class="bcp14">MUST NOT</span> be reset at the start of each measurement period.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="ts-df">
-<section id="section-5.3">
+<section id="section-4.3">
         <h3 id="name-time-stamped-delay-factor-t">
-<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-time-stamped-delay-factor-t" class="section-name selfRef">Time-Stamped Delay Factor (TS-DF)</a>
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-time-stamped-delay-factor-t" class="section-name selfRef">Time-Stamped Delay Factor (TS-DF)</a>
         </h3>
-<p id="section-5.3-1">Time-Stamped Delay Factor (TS-DF) metric is calculated as defined in <span>[<a href="#EBU3337" class="cite xref">EBU3337</a>]</span>.<a href="#section-5.3-1" class="pilcrow">¶</a></p>
-<p id="section-5.3-2">The calculation of TS-DF samples is based on the Monotonic Clock Timestamp <a href="#payload-structure" class="auto internal xref">Figure 1</a> extracted from the payload.
-Unlike the jitter algorithm in <span>[<a href="#RFC3550" class="cite xref">RFC3550</a>]</span>, the TS-DF algorithm does not use a smoothing factor
-and therefore gives a very accurate instantaneous result.<a href="#section-5.3-2" class="pilcrow">¶</a></p>
-<p id="section-5.3-3">As per the specification, the recommended measurement period is 1 second, but other values are also possible.<a href="#section-5.3-3" class="pilcrow">¶</a></p>
+<p id="section-4.3-1">Time-Stamped Delay Factor metric is calculated as defined in <span>[<a href="#EBU3337" class="cite xref">EBU3337</a>]</span>.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.3-2">The calculation of TS-DF samples is based on the Monotonic Clock Timestamp <a href="#payload-structure" class="auto internal xref">Figure 1</a> extracted from the payload.
+Unlike the algorithm defined in <span>[<a href="#RFC3550" class="cite xref">RFC3550</a>]</span>, TS-DF one does not use a smoothing factor
+and therefore gives a very accurate instantaneous result.<a href="#section-4.3-2" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="received-payloads">
-<section id="section-5.4">
+<section id="section-4.4">
         <h3 id="name-total-number-of-received-pa">
-<a href="#section-5.4" class="section-number selfRef">5.4. </a><a href="#name-total-number-of-received-pa" class="section-name selfRef">Total Number of Received Payloads</a>
+<a href="#section-4.4" class="section-number selfRef">4.4. </a><a href="#name-total-number-of-received-pa" class="section-name selfRef">Total Number of Received Payloads</a>
         </h3>
-<p id="section-5.4-1">A counter is initialized with zero and incremented on each payload read. The value <span class="bcp14">MUST NOT</span> be reset at the start of each measurement period.<a href="#section-5.4-1" class="pilcrow">¶</a></p>
+<p id="section-4.4-1">A counter is initialized with zero and incremented on each payload read. The value <span class="bcp14">MUST NOT</span> be reset at the start of each measurement period.<a href="#section-4.4-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="missing-payloads">
-<section id="section-5.5">
+<section id="section-4.5">
         <h3 id="name-total-number-of-missing-pay">
-<a href="#section-5.5" class="section-number selfRef">5.5. </a><a href="#name-total-number-of-missing-pay" class="section-name selfRef">Total Number of Missing Payloads</a>
+<a href="#section-4.5" class="section-number selfRef">4.5. </a><a href="#name-total-number-of-missing-pay" class="section-name selfRef">Total Number of Missing Payloads</a>
         </h3>
-<p id="section-5.5-1">A counter is initialized with zero and is incremented each time a discontinuity in consecutive Payload Sequence Number <a href="#payload-structure" class="auto internal xref">Figure 1</a> values
-is observed. The missing sequence numbers <span class="bcp14">MUST</span> be recorded. The counter is decremented by one if a missing sequence is received out of order.
-The value <span class="bcp14">MUST NOT</span> be reset at the start of each measurement period.<a href="#section-5.5-1" class="pilcrow">¶</a></p>
+<p id="section-4.5-1">A counter is initialized with zero and is incremented each time a discontinuity in consecutive payloads sequence numbers (Payload Sequence Number <a href="#payload-structure" class="auto internal xref">Figure 1</a>)
+is determined. Missing sequence numbers <span class="bcp14">MUST</span> be recorded. The counter is decremented by one once a payload with missing sequence number is received out of order.
+The value <span class="bcp14">MUST NOT</span> be reset at the start of each measurement period.<a href="#section-4.5-1" class="pilcrow">¶</a></p>
 </section>
 </div>
-<div id="total-number-of-reordered-packets-and-reordering-distance">
-<section id="section-5.6">
+<div id="reordered-payloads">
+<section id="section-4.6">
         <h3 id="name-total-number-of-reordered-p">
-<a href="#section-5.6" class="section-number selfRef">5.6. </a><a href="#name-total-number-of-reordered-p" class="section-name selfRef">Total Number of Reordered Packets and Reordering Distance</a>
+<a href="#section-4.6" class="section-number selfRef">4.6. </a><a href="#name-total-number-of-reordered-p" class="section-name selfRef">Total Number of Reordered Payloads and Reordering Distance</a>
         </h3>
-<p id="section-5.6-1">(?? Reordered payloads)<a href="#section-5.6-1" class="pilcrow">¶</a></p>
-<p id="section-5.6-2">A counter is initialized with zero and is incremented each time the Payload Sequence Number <a href="#payload-structure" class="auto internal xref">Figure 1</a> value
-precedes the next Expected Payload Sequence Number.<a href="#section-5.6-2" class="pilcrow">¶</a></p>
-<p id="section-5.6-3">The next Expected Payload Sequence Number is initialized with zero and is updated if the Payload Sequence Number
-value of a received payload incremented by one exceeds the current Expected Payload Sequence Number value.<a href="#section-5.6-3" class="pilcrow">¶</a></p>
-<p id="section-5.6-4">The value <span class="bcp14">MUST NOT</span> be reset at the start of each measurement period.<a href="#section-5.6-4" class="pilcrow">¶</a></p>
-<p id="section-5.6-5">(?? Reordering Distance isn't defined)<a href="#section-5.6-5" class="pilcrow">¶</a></p>
+<p id="section-4.6-1">A counter is initialized with zero and is incremented each time the Payload Sequence Number <a href="#payload-structure" class="auto internal xref">Figure 1</a> value
+precedes the next Expected Payload Sequence Number.<a href="#section-4.6-1" class="pilcrow">¶</a></p>
+<p id="section-4.6-2">The next Expected Payload Sequence Number is initialized with zero and is updated if the Payload Sequence Number
+value of a received payload incremented by one exceeds the current Expected Payload Sequence Number value.<a href="#section-4.6-2" class="pilcrow">¶</a></p>
+<p id="section-4.6-3">The value <span class="bcp14">MUST NOT</span> be reset at the start of each measurement period.<a href="#section-4.6-3" class="pilcrow">¶</a></p>
+<p id="section-4.6-4">TODO: Reordering Distance.<a href="#section-4.6-4" class="pilcrow">¶</a></p>
 </section>
 </div>
-<div id="the-number-of-malformed-payloads">
-<section id="section-5.7">
-        <h3 id="name-the-number-of-malformed-pay">
-<a href="#section-5.7" class="section-number selfRef">5.7. </a><a href="#name-the-number-of-malformed-pay" class="section-name selfRef">The Number of Malformed Payloads</a>
+<div id="the-number-of-corrupted-payloads">
+<section id="section-4.7">
+        <h3 id="name-the-number-of-corrupted-pay">
+<a href="#section-4.7" class="section-number selfRef">4.7. </a><a href="#name-the-number-of-corrupted-pay" class="section-name selfRef">The Number of Corrupted Payloads</a>
         </h3>
-<p id="section-5.7-1">TODO<a href="#section-5.7-1" class="pilcrow">¶</a></p>
+<p id="section-4.7-1">TODO<a href="#section-4.7-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="the-number-of-duplicated-payloads">
-<section id="section-5.8">
+<section id="section-4.8">
         <h3 id="name-the-number-of-duplicated-pa">
-<a href="#section-5.8" class="section-number selfRef">5.8. </a><a href="#name-the-number-of-duplicated-pa" class="section-name selfRef">The Number of Duplicated Payloads</a>
+<a href="#section-4.8" class="section-number selfRef">4.8. </a><a href="#name-the-number-of-duplicated-pa" class="section-name selfRef">The Number of Duplicated Payloads</a>
         </h3>
-<p id="section-5.8-1">TODO<a href="#section-5.8-1" class="pilcrow">¶</a></p>
+<p id="section-4.8-1">TODO<a href="#section-4.8-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
 </div>
 <div id="security-considerations">
-<section id="section-6">
+<section id="section-5">
       <h2 id="name-security-considerations">
-<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
       </h2>
-<p id="section-6-1">TODO Security<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-5-1">TODO Security<a href="#section-5-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="iana-considerations">
-<section id="section-7">
+<section id="section-6">
       <h2 id="name-iana-considerations">
-<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
       </h2>
-<p id="section-7-1">This document has no IANA actions.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<p id="section-6-1">This document has no IANA actions.<a href="#section-6-1" class="pilcrow">¶</a></p>
 </section>
 </div>
-<section id="section-8">
+<section id="section-7">
       <h2 id="name-normative-references">
-<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
       </h2>
 <dl class="references">
 <dt id="EBU3337">[EBU3337]</dt>
@@ -1509,8 +1503,16 @@ value of a received payload incremented by one exceeds the current Expected Payl
 <span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8174">https://www.rfc-editor.org/rfc/rfc8174</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC8877">[RFC8877]</dt>
-    <dd>
+      <dd>
 <span class="refAuthor">Mizrahi, T.</span>, <span class="refAuthor">Fabini, J.</span>, and <span class="refAuthor">A. Morton</span>, <span class="refTitle">"Guidelines for Defining Packet Timestamps"</span>, <span class="seriesInfo">RFC 8877</span>, <span class="seriesInfo">DOI 10.17487/RFC8877</span>, <time datetime="2020-09" class="refDate">September 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8877">https://www.rfc-editor.org/rfc/rfc8877</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9000">[RFC9000]</dt>
+      <dd>
+<span class="refAuthor">Iyengar, J., Ed.</span> and <span class="refAuthor">M. Thomson, Ed.</span>, <span class="refTitle">"QUIC: A UDP-Based Multiplexed and Secure Transport"</span>, <span class="seriesInfo">RFC 9000</span>, <span class="seriesInfo">DOI 10.17487/RFC9000</span>, <time datetime="2021-05" class="refDate">May 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9000">https://www.rfc-editor.org/rfc/rfc9000</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9221">[RFC9221]</dt>
+    <dd>
+<span class="refAuthor">Pauly, T.</span>, <span class="refAuthor">Kinnear, E.</span>, and <span class="refAuthor">D. Schinazi</span>, <span class="refTitle">"An Unreliable Datagram Extension to QUIC"</span>, <span class="seriesInfo">RFC 9221</span>, <span class="seriesInfo">DOI 10.17487/RFC9221</span>, <time datetime="2022-03" class="refDate">March 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9221">https://www.rfc-editor.org/rfc/rfc9221</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 </dl>
 </section>

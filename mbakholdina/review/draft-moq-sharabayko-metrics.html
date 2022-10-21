@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta content="Common,Latin" name="scripts">
 <meta content="initial-scale=1.0" name="viewport">
-<title>RFC 0: Estimating Transmission Delay, Jitter, and Other Metrics on a QUIC Connection.</title>
+<title>RFC 0: Media over QUIC - Estimating Transmission Metrics on a QUIC Connection</title>
 <meta content="Maxim Sharabayko" name="author">
 <meta content="Maria Sharabayko" name="author">
 <meta content="
-       This document defines an approach of objectively measuring the transmission delay, jitter, and other performance metrics
+       This document defines an approach of objectively measuring transmission delay, jitter, and other performance metrics
 for a QUIC   connection using an artificially generated payload of a specific structure. 
        TODO (Maxim): at an application level? 
     " name="description">
@@ -1080,10 +1080,10 @@ svg :is([stroke="fill"], [fill^="#fff"]) {
 </dl>
 </div>
 <h1 id="rfcnum">RFC 0</h1>
-<h1 id="title">Estimating Transmission Delay, Jitter, and Other Metrics on a QUIC Connection.</h1>
+<h1 id="title">Media over QUIC - Estimating Transmission Metrics on a QUIC Connection</h1>
 <section id="section-abstract">
       <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
-<p id="section-abstract-1">This document defines an approach of objectively measuring the transmission delay, jitter, and other performance metrics
+<p id="section-abstract-1">This document defines an approach of objectively measuring transmission delay, jitter, and other performance metrics
 for a QUIC <span>[<a href="#RFC9000" class="cite xref">RFC9000</a>]</span> connection using an artificially generated payload of a specific structure.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
 <p id="section-abstract-2">TODO (Maxim): at an application level?<a href="#section-abstract-2" class="pilcrow">¶</a></p>
 </section>
@@ -1199,12 +1199,12 @@ for a QUIC <span>[<a href="#RFC9000" class="cite xref">RFC9000</a>]</span> conne
 <a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
       </h2>
 <p id="section-1-1">TODO (Maria): Media over QUIC has emerged.<a href="#section-1-1" class="pilcrow">¶</a></p>
-<p id="section-1-2">For live media contribution when processing of data takes place in real time,
-it is important to estimate packets transmission delays and delay variation (or jitter),
-determine data loss and reordering as well as calculate other performance metrics <a href="#performance-metrics" class="auto internal xref">Section 4</a>.<a href="#section-1-2" class="pilcrow">¶</a></p>
-<p id="section-1-3">(??) The less jitter is observed, the less buffer a decoder must have, and the more confidence in a transmission latency
-constraints can be gained and utilized.<a href="#section-1-3" class="pilcrow">¶</a></p>
-<p id="section-1-4">The current draft discusses an approach of objectively measuring the transmission delay, jitter, and other performance metrics <a href="#performance-metrics" class="auto internal xref">Section 4</a>
+<p id="section-1-2">// refer to https://datatracker.ietf.org/doc/draft-gruessing-moq-requirements/<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">For live media contribution, where processing of data takes place in real time,
+it is important to estimate transmission delay and delay variation (or jitter),
+to determine data loss and reordering, as well as to calculate other transmission metrics.
+The lower the observed jitter level, the smaller the decoder buffer needed, and the higher the confidence we can have in a given transmission latency setting.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">The current draft discusses an approach of objectively measuring transmission delay, jitter, and other performance metrics <a href="#performance-metrics" class="auto internal xref">Section 4</a>
 for a QUIC <span>[<a href="#RFC9000" class="cite xref">RFC9000</a>]</span> connection using an artificially generated payload of a specific structure <a href="#payload-format" class="auto internal xref">Section 3</a>.
 Both streams <span>[<a href="#RFC9000" class="cite xref">RFC9000</a>]</span> and unreliable datagrams <span>[<a href="#RFC9221" class="cite xref">RFC9221</a>]</span> are going to be supported, however, for the time being performance metrics <a href="#performance-metrics" class="auto internal xref">Section 4</a> are defined for datagrams only.<a href="#section-1-4" class="pilcrow">¶</a></p>
 <p id="section-1-5">TODO (Maxim):  at an application level, application protocol level<a href="#section-1-5" class="pilcrow">¶</a></p>
@@ -1296,8 +1296,8 @@ to enable performance metrics calculation at the receiver side.<a href="#section
         <dd class="break"></dd>
 <dt id="section-3-3.3">NTP 64-Bit Timestamp: 64 bits.</dt>
         <dd style="margin-left: 1.5em" id="section-3-3.4">
-          <p id="section-3-3.4.1">NTP 64-bit (?? system clock) timestamp <span>[<a href="#RFC5905" class="cite xref">RFC5905</a>]</span> <span>[<a href="#RFC8877" class="cite xref">RFC8877</a>]</span> of the moment when a payload has been generated
-meaning the payload generation has finished. (?? delete: System clock.)<a href="#section-3-3.4.1" class="pilcrow">¶</a></p>
+          <p id="section-3-3.4.1">NTP 64-bit system clock timestamp <span>[<a href="#RFC5905" class="cite xref">RFC5905</a>]</span> <span>[<a href="#RFC8877" class="cite xref">RFC8877</a>]</span> of the moment when a payload has been generated
+meaning the payload generation has finished.<a href="#section-3-3.4.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
 <dt id="section-3-3.5">Monotonic Clock Timestamp: 64 bits.</dt>

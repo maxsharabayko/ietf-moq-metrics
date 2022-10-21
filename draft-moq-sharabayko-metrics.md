@@ -1,5 +1,5 @@
 ---
-title: "Estimating Transmission Delay, Jitter, and Other Metrics on a QUIC Connection."
+title: "Media over QUIC - Estimating Transmission Metrics on a QUIC Connection"
 abbrev: "quic-delay"
 category: info
 
@@ -52,7 +52,7 @@ informative:
 
 --- abstract
 
-This document defines an approach of objectively measuring the transmission delay, jitter, and other performance metrics
+This document defines an approach of objectively measuring transmission delay, jitter, and other performance metrics
 for a QUIC {{RFC9000}} connection using an artificially generated payload of a specific structure.
 
 TODO (Maxim): at an application level?
@@ -63,14 +63,14 @@ TODO (Maxim): at an application level?
 
 TODO (Maria): Media over QUIC has emerged.
 
-For live media contribution when processing of data takes place in real time,
-it is important to estimate packets transmission delays and delay variation (or jitter),
-determine data loss and reordering as well as calculate other performance metrics {{performance-metrics}}.
+// refer to https://datatracker.ietf.org/doc/draft-gruessing-moq-requirements/
 
-(??) The less jitter is observed, the less buffer a decoder must have, and the more confidence in a transmission latency
-constraints can be gained and utilized.
+For live media contribution, where processing of data takes place in real time,
+it is important to estimate transmission delay and delay variation (or jitter),
+to determine data loss and reordering, as well as to calculate other transmission metrics.
+The lower the observed jitter level, the smaller the decoder buffer needed, and the higher the confidence we can have in a given transmission latency setting.
 
-The current draft discusses an approach of objectively measuring the transmission delay, jitter, and other performance metrics {{performance-metrics}}
+The current draft discusses an approach of objectively measuring transmission delay, jitter, and other performance metrics {{performance-metrics}}
 for a QUIC {{RFC9000}} connection using an artificially generated payload of a specific structure {{payload-format}}.
 Both streams {{RFC9000}} and unreliable datagrams {{RFC9221}} are going to be supported, however, for the time being performance metrics {{performance-metrics}} are defined for datagrams only.
 
@@ -139,8 +139,8 @@ Payload Sequence Number: 64 bits.
 : A sequential number of the payload. Starts from zero and is incremented for every payload that follows.
 
 NTP 64-Bit Timestamp: 64 bits.
-: NTP 64-bit (?? system clock) timestamp {{RFC5905}} {{RFC8877}} of the moment when a payload has been generated
-  meaning the payload generation has finished. (?? delete: System clock.)
+: NTP 64-bit system clock timestamp {{RFC5905}} {{RFC8877}} of the moment when a payload has been generated
+  meaning the payload generation has finished.
 
 Monotonic Clock Timestamp: 64 bits.
 : Monotonic clock timestamp of the moment when a payload has been generated.

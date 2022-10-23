@@ -3,7 +3,7 @@ title: "Estimating Transmission Metrics on a QUIC Connection"
 abbrev: "quic-delay"
 category: info
 
-docname: draft-moq-sharabayko-metrics-latest
+docname: draft-sharabayko-moq-metrics-latest
 submissiontype: independent  # also: "independent", "IAB", or "IRTF"
 number: 00
 date:
@@ -52,10 +52,9 @@ informative:
 
 --- abstract
 
-This document defines an approach of objectively measuring transmission delay, jitter, and other performance metrics
-for a QUIC {{RFC9000}} connection using an artificially generated payload of a specific structure.
-
-TODO (Maxim): Should we mention that this is done at an application (or application protocol) level?
+This document defines an approach of objectively measuring transmission such metrics like delay, jitter,
+and loss-related transmission metrics for a QUIC {{RFC9000}} connection using an artificially generated payload
+of a specific structure. The measurement is to be carried on an application level to be protocol-independent.
 
 --- middle
 
@@ -66,7 +65,7 @@ TODO (Maxim):
 - I write below, perhaps, we will need to change this. Or we can rephrase that the metrics for streams are to be refined further.
   "Both streams {{RFC9000}} and unreliable datagrams {{RFC9221}} are going to be supported, however, for the time being performance metrics {{performance-metrics}} are defined for datagrams only."
 
-With an establishment of the Media over QUIC (moq) working group {{TODO: https://datatracker.ietf.org/wg/moq/about/}}, ongoing discussions on the use cases to be considered {{TODO: https://datatracker.ietf.org/doc/draft-gruessing-moq-requirements/}}, and the development of several independent specifications {{TODO: https://datatracker.ietf.org/doc/html/draft-gruessing-moq-requirements-02#section-3}} based on either QUIC streams {{RFC9000}}, or datagrams {{RFC9221}}, it is important to define the way of newly emerging protocol performance evaluation.
+With an establishment of the Media over QUIC working group, ongoing discussions on the use cases to be considered {{TODO: https://datatracker.ietf.org/doc/draft-gruessing-moq-requirements/}}, and the development of several independent specifications {{TODO: https://datatracker.ietf.org/doc/html/draft-gruessing-moq-requirements-02#section-3}} based on either QUIC streams {{RFC9000}}, or datagrams {{RFC9221}}, it is important to define the way of newly emerging protocol performance evaluation.
 
 For example for live media contribution, where processing of data takes place in real time,
 it is important to estimate transmission delay and delay variation (or jitter),

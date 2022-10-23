@@ -1,5 +1,5 @@
 ---
-title: "Media over QUIC - Estimating Transmission Metrics on a QUIC Connection"
+title: "Estimating Transmission Metrics on a QUIC Connection"
 abbrev: "quic-delay"
 category: info
 
@@ -55,11 +55,16 @@ informative:
 This document defines an approach of objectively measuring transmission delay, jitter, and other performance metrics
 for a QUIC {{RFC9000}} connection using an artificially generated payload of a specific structure.
 
-TODO (Maxim): at an application level?
+TODO (Maxim): Should we mention that this is done at an application (or application protocol) level?
 
 --- middle
 
 # Introduction
+
+TODO (Maxim): 
+- Not sure whether we can use *Media over QUIC* or better "Media over QUIC" throughout the whole document?
+- I write below, perhaps, we will need to change this. Or we can rephrase that the metrics for streams are to be refined further.
+  "Both streams {{RFC9000}} and unreliable datagrams {{RFC9221}} are going to be supported, however, for the time being performance metrics {{performance-metrics}} are defined for datagrams only."
 
 TODO (Maria): Media over QUIC has emerged.
 
@@ -70,17 +75,17 @@ it is important to estimate transmission delay and delay variation (or jitter),
 to determine data loss and reordering, as well as to calculate other transmission metrics.
 The lower the observed jitter level, the smaller the decoder buffer needed, and the higher the confidence we can have in a given transmission latency setting.
 
-The current draft discusses an approach of objectively measuring transmission delay, jitter, and other performance metrics {{performance-metrics}}
-for a QUIC {{RFC9000}} connection using an artificially generated payload of a specific structure {{payload-format}}.
+The current draft discusses an approach of objectively measuring transmission delay, jitter, and other performance metrics{{performance-metrics}} for a QUIC {{RFC9000}} connection using an artificially generated payload of a specific structure {{payload-format}}.
 Both streams {{RFC9000}} and unreliable datagrams {{RFC9221}} are going to be supported, however, for the time being performance metrics {{performance-metrics}} are defined for datagrams only.
 
-TODO (Maxim):  at an application level, application protocol level
+TODO (Maxim): Should we mention that this is done at an application (or application protocol) level?
 
-The suggested approach could be used during the Media over QUIC protocol development to:
+This approach could be used during development of the *Media over QUIC* protocol to:
 
-- compare the independent implementations of the protocol and/or perform regression testing of the same implementation,
-- evaluate various congestion control schemes considered for including in the protocol,
-- evaluate protocol performance and transmission efficiency using either STREAM or DATAGRAM frames.
+- compare the independent implementations of the *Media over QUIC* protocol, or perform regression testing of a given implementation,
+- evaluate various congestion control schemes being considered for implementation,
+- evaluate the performance and efficiency of QUIC streams versus datagrams,
+- TODO(Maxim - If we decide to consider other protocols, not QUIC only): compare *Media over QUIC* protocol performance against other protocols.
 
 TODO (Maria or later): Why not to simply use QUIC statistics provided by the library. Provide motivation for these
 
@@ -105,7 +110,7 @@ document are to be interpreted as described in {{RFC2119}}.
 # Payload Format
 
 A payload of a specific format {{payload-structure}} MUST be artificially generated
-to enable performance metrics calculation at the receiver side.
+to enable the calculation of performance metrics at the receiver side.
 
 ~~~
    0                   1                   2                   3
@@ -159,7 +164,7 @@ Remaining Payload: variable length.
   starting with value of the remainder after dividing the Payload Sequence Number by 32
   and followed by sequentially increasing values.
 
-In the case of QUIC streams, the payload can be as long as the specified stream length and MUST fit within the stream.
+In the case of QUIC streams, the payload can be as long as the specified stream length and MUST account for the entire stream.
 As stream data is sent in the form of STREAM frames, the very first frame will contain
 Payload Sequence Number, NTP 64-Bit Timestamp, Monotonic Clock Timestamp, Payload Length, and
 MD5 Checksum fields, as well as some of the remaining payload data. Consequent STREAM frames will carry the rest of the payload.
@@ -174,7 +179,7 @@ TODO (Maxim): Messages !!! Then change a bit the text above.
 The calculation of the following metrics is suggested to be included in the scope:
 
 - Transmission Delay (or Latency) {{transmission-delay}},
-- Interarrival Jitter as per {{RFC3550}} {{jitter-rfc3550}},
+- Interarrival Jitter {{jitter-rfc3550}},
 - Time-Stamped Delay Factor (TS-DF) {{ts-df}},
 - Total Number of Received Payloads {{received-payloads}},
 - Total Number of Missing Payloads {{missing-payloads}},
@@ -203,7 +208,7 @@ where
 Note that TD value will be affected by the clock drift, the difference in the system time of the two clocks at the sender and at the receiver.
 
 Minimum (TD_MIN) and maximum (TD_MAX) delay estimates MUST be reset to "not available" (N/A)
-at the start of each measurement period while the smoothed value (TD_SMOOTHED) MUST NOT be reset and the calculation SHOULD continue during the entire experiment.
+at the start of each measurement period, while the smoothed value (TD_SMOOTHED) MUST NOT be reset and the calculation SHOULD continue during the entire experiment.
 Here and throughout the current document, smoothing means applying an exponentially weighted moving average (EWMA).
 
 ~~~

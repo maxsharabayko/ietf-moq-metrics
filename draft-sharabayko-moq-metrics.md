@@ -48,17 +48,16 @@ normative:
     date: 29 January, 2010
 
 informative:
-  I-D.draft-kpugin-rush:
-  I-D.draft-lcurley-warp:
-  I-D.draft-sharabayko-srt-over-quic:
-  I-D.draft-engelbart-rtp-over-quic:
-  I-D.draft-jennings-moq-quicr-arch:
-  I-D.draft-rtpfolks-quic-rtp-over-quic:
-  I-D.draft-gruessing-moq-requirements:
-  I-D.draft-shi-quic-dtp:
-  I-D.draft-sharabayko-srt:
-  I-D.draft-ietf-quic-qlog-main-schema:
-  I-D.draft-huitema-quic-ts:
+  I-D.kpugin-rush:
+  I-D.lcurley-warp:
+  I-D.sharabayko-srt-over-quic-00:
+  I-D.ietf-avtcore-rtp-over-quic-00:
+  I-D.jennings-moq-quicr-arch-01:
+  I-D.gruessing-moq-requirements-02:
+  I-D.shi-quic-dtp-06:
+  I-D.sharabayko-srt-01:
+  I-D.ietf-quic-qlog-main-schema-03:
+  I-D.huitema-quic-ts-08:
 
 
 --- abstract
@@ -72,9 +71,9 @@ of a specific structure. The measurement is to be carried on an application leve
 # Introduction
 
 Establishment of the Media over QUIC working group acknowledges the relevance of live media contribution and distribution
-and encourages discussions on the use cases to be considered {{I-D.draft-gruessing-moq-requirements}}.
-Several proposals complement to those discussions. Most are currently based on QUIC streams {{I-D.draft-lcurley-warp}}, {{I-D.draft-kpugin-rush}}, {{I-D.draft-jennings-moq-quicr-arch}}, {{I-D.draft-shi-quic-dtp}}.
-QUIC datagrams are yet to be considered within the group, but some related work includes {{I-D.draft-sharabayko-srt-over-quic}}, {{I-D.draft-jennings-moq-quicr-arch}}, {{I-D.draft-engelbart-rtp-over-quic}}.
+and encourages discussions on the use cases to be considered {{I-D.draft-gruessing-moq-requirements-02}}.
+Several proposals complement to those discussions. Most are currently based on QUIC streams {{I-D.lcurley-warp}}, {{I-D.kpugin-rush}}, {{I-D.jennings-moq-quicr-arch-01}}, {{I-D.shi-quic-dtp-06}}.
+QUIC datagrams are yet to be considered within the group, but some related work includes {{I-D.sharabayko-srt-over-quic-00}}, {{I-D.jennings-moq-quicr-arch-01}}, {{I-D.ietf-avtcore-rtp-over-quic-00}}.
 
 Thus, an important task is to evaluate solutions and algorithms being proposed.
 For example for live media contribution, where processing of data takes place in real time,
@@ -95,15 +94,15 @@ This approach could be used during development of the *Media over QUIC* protocol
 - compare the independent proposals and implementations of the *Media over QUIC* protocol,
 - perform regression testing of a certain implementation or proposal,
 - evaluate various congestion control schemes for live media,
-- maybe compare *Media over QUIC* protocol performance against other protocols, e.g. RTP over QUIC {{I-D.draft-engelbart-rtp-over-quic}} or SRT {{I-D.draft-sharabayko-srt}}.
+- maybe compare *Media over QUIC* protocol performance against other protocols, e.g. RTP over QUIC {{I-D.ietf-avtcore-rtp-over-quic-00}} or SRT {{I-D.sharabayko-srt-01}}.
 
 QUIC, as a protocol, provides a powerful set of statistics which can be used in addition to the defined procedure.
 There are, however, several things to keep in mind:
 
 - Independent QUIC transport implementations do not necessarily support the same set of statistics and the format isn't necessarily the same among different libraries.
-  Although {{I-D.draft-ietf-quic-qlog-main-schema}} might be helpful in a way.
+  Although {{I-D.ietf-quic-qlog-main-schema-03}} might be helpful in a way.
 
-- QUIC packets themselves do not have a timestamp field to allow the measurement of one-way delays. Although there is a related draft proposal {{I-D.draft-huitema-quic-ts}}, which proposes the definition of a TIMESTAMP frame.
+- QUIC packets themselves do not have a timestamp field to allow the measurement of one-way delays. Although there is a related draft proposal {{I-D.huitema-quic-ts-08}}, which proposes the definition of a TIMESTAMP frame.
 
 ## Requirements Notation
 

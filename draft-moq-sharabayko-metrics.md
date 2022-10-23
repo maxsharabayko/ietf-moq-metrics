@@ -1,5 +1,5 @@
 ---
-title: "Estimating Latency and Jitter on a QUIC Datagram Connection."
+title: "Estimating Transmission Metrics on a QUIC Connection"
 abbrev: "quic-delay"
 category: info
 
@@ -38,6 +38,8 @@ normative:
     RFC3550:
     RFC5905:
     RFC8877:
+    RFC9000:
+    RFC9221:
     EBU3337:
       target: https://tech.ebu.ch/publications/tech3337
       title: "TS-DF Algorithm to Measure Network Jitter on RTP Streams"
@@ -50,22 +52,55 @@ informative:
 
 --- abstract
 
-TODO Abstract
+This document defines an approach of objectively measuring transmission delay, jitter, and other performance metrics
+for a QUIC {{RFC9000}} connection using an artificially generated payload of a specific structure.
 
+TODO (Maxim): Should we mention that this is done at an application (or application protocol) level?
 
 --- middle
 
 # Introduction
 
-TODO Introduction
+TODO (Maxim): 
+- Not sure whether we can use *Media over QUIC* or better "Media over QUIC" throughout the whole document?
+- I write below, perhaps, we will need to change this. Or we can rephrase that the metrics for streams are to be refined further.
+  "Both streams {{RFC9000}} and unreliable datagrams {{RFC9221}} are going to be supported, however, for the time being performance metrics {{performance-metrics}} are defined for datagrams only."
 
-Media over QUIC has emerged. For live media contribution when processing takes place in a real time
-it is very important to understand transmission and processing delays, as well as jitter on the receiver side.
-The less jitter is there, the less buffer a decoder must have, and the more confidence in a transmission latency
-constraints can be gained and utilized.
+With an establishment of the Media over QUIC (moq) working group {{TODO: https://datatracker.ietf.org/wg/moq/about/}}, ongoing discussions on the use cases to be considered {{TODO: https://datatracker.ietf.org/doc/draft-gruessing-moq-requirements/}}, and the development of several independent specifications {{TODO: https://datatracker.ietf.org/doc/html/draft-gruessing-moq-requirements-02#section-3}} based on either QUIC streams {{RFC9000}}, or datagrams {{RFC9221}}, it is important to define the way of newly emerging protocol performance evaluation.
 
-This draft discusses an approach of objectively measuring metrics of QUIC connections (both STREAMS and DATAGRAMS)
-using an artificially generated payload.
+For example for live media contribution, where processing of data takes place in real time,
+it is important to estimate transmission delay and delay variation (or jitter),
+to determine data loss and reordering, as well as to calculate other transmission metrics.
+The lower the observed jitter level, the smaller the decoder buffer needed, and the higher the confidence we can have in a given transmission latency setting.
+
+The current draft discusses an approach of objectively measuring transmission delay, jitter, and other performance metrics{{performance-metrics}} for a QUIC {{RFC9000}} connection using an artificially generated payload of a specific structure {{payload-format}}.
+Both streams {{RFC9000}} and unreliable datagrams {{RFC9221}} are going to be supported, however, for the time being performance metrics {{performance-metrics}} are defined for datagrams only.
+
+TODO (Maxim): Should we mention that this is done at an application (or application protocol) level?
+
+This approach could be used during development of the *Media over QUIC* protocol to:
+
+- compare the independent implementations of the *Media over QUIC* protocol, or perform regression testing of a given implementation,
+- evaluate various congestion control schemes being considered for implementation,
+- evaluate the performance and efficiency of QUIC streams versus datagrams,
+- TODO(Maxim - If we decide to consider other protocols, not QUIC only): compare *Media over QUIC* protocol performance against other protocols.
+
+QUIC, as a protocol, provides a powerful set of statistics which can be used in addition to the defined procedure. There are, however, several things to keep in mind:
+
+- Independent QUIC transport implementations do not all necessarily support the same set of statistics and the format isn't necessarily the same among different libraries.
+- QUIC packets do not have a timestamp field to allow the measurement of one-way delays. There is an experimental draft {{TODO: https://datatracker.ietf.org/doc/draft-huitema-quic-ts/}}, however, which proposes the definition of a TIMESTAMP frame carrying the time at which a packet is sent.
+
+(TODO: this we could put as 2 separate paragraphs below the QUIC stats point to keep in mind)
+- An artificially generated payload {{payload-format}} may be of a random structure that allows to emulate various scenarios and agree on a set of test procedures and cases for the newly emerging protocol. (TODO Maxim: You can say here something about putting the whole gop inside, or 1 frame, or something like that. The idea is that we could emulate whatever we want and that the payload isn't limited to any size, etc.)
+- (TODO Maxim: Don't know, but let's discuss. Something related to the specifics of streams & datagrams. We need a way of adequately comparing transmission via streams vs datagrams. There are nuances. Like the calculation of metrics for datagrams would be per paсket, for streams - once the stream is fully delivered or??? )
+
+// TODO Remove (This is from QUIC datagrams I guess) When a QUIC endpoint receives a valid DATAGRAM frame, it SHOULD
+   deliver the data to the application immediately, as long as it is
+   able to process the frame and can store the contents in memory.
+
+TODO (Maxim):
+- Idea of generating payloads of variable length to emulate I, P, B frames and different scenarious.
+- We need a method to compare streams and datagrams at the same amount of data -> message number, groups of datagrams.
 
 ## Requirements Notation
 
@@ -73,16 +108,14 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
 "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
 document are to be interpreted as described in {{RFC2119}}.
 
-
 # Conventions and Definitions
 
 {::boilerplate bcp14-tagged}
 
-# Artificial Payload
+# Payload Format
 
-The artificial payload is generated for each STREAM or each DATAGRAM packet.
-The payload format MUST allow the payload receiver to identify data loss,
-data reordering, estimate transmission delay and receiving jitter.
+A payload of a specific format {{payload-structure}} MUST be artificially generated
+to enable the calculation of performance metrics at the receiver side.
 
 ~~~
    0                   1                   2                   3
@@ -104,7 +137,7 @@ data reordering, estimate transmission delay and receiving jitter.
   |                                                               |
   |                                                               |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-  |                       Remaining payload                       |
+  |                       Remaining Payload                       |
   |                                                               |
                                 (...)
   |                                                               |
@@ -116,109 +149,125 @@ Payload Sequence Number: 64 bits.
 : A sequential number of the payload. Starts from zero and is incremented for every payload that follows.
 
 NTP 64-Bit Timestamp: 64 bits.
-: NTP 64-Bit Timestamp {{RFC5905}} {{RFC8877}} of the moment the payload has been generated
-  (generation has been finished). System clock.
+: NTP 64-bit system clock timestamp {{RFC5905}} {{RFC8877}} of the moment when a payload has been generated
+  meaning the payload generation has finished.
 
 Monotonic Clock Timestamp: 64 bits.
-: Monotonic Clock Timestamp of the moment the payload has been generated.
+: Monotonic clock timestamp of the moment when a payload has been generated.
   Represents microseconds elapsed since monotonic clock epoch.
 
 Payload Length: 32 bits.
 : The full length of the payload (including preceding "Payload Sequence Number" and both timestamp fields).
 
 MD5 Checksum: 128 bits.
-: A hash value to confirm the payload integrity. Calculated for the whole message with the SHA-128 Checksum field
+: A hash value to confirm the payload integrity. Calculated for the whole message with the SHA-128 checksum field
   zeroed out.
 
-Remaining payload: variable length.
-: The remaining payload is generated to form the whole DATAGRAM packet of the whole STREAM.
-  Randomly generated sequence of bytes.
-  May be generated as a sequence of 8-bit integers 
+Remaining Payload: variable length.
+: The remaining payload of variable length.
+  Randomly generated sequence of bytes. MAY be generated as a sequence of 8-bit integers
   starting with value of the remainder after dividing the Payload Sequence Number by 32
   and followed by sequentially increasing values.
 
-In the case of a QUIC DATAGRAM the payload size MUST fit exactly into a single DATAGRAM.
-The Payload Sequence Number is increased for each new DATAGRAM.
+In the case of QUIC streams, the payload can be as long as the specified stream length and MUST account for the entire stream.
+As stream data is sent in the form of STREAM frames, the very first frame will contain
+Payload Sequence Number, NTP 64-Bit Timestamp, Monotonic Clock Timestamp, Payload Length, and
+MD5 Checksum fields, as well as some of the remaining payload data. Consequent STREAM frames will carry the rest of the payload.
 
-In the case of QUIC STREAMS the payload size MUST form the whole STREAM.
+In the case of QUIC datagrams, the payload MUST fit into a single DATAGRAM frame.
+The Payload Sequence Number field MUST be increased for each sent DATAGRAM frame.
 
+TODO (Maxim): Messages !!! Then change a bit the text above.
 
-# Metrics
+# Performance Metrics {#performance-metrics}
 
-The the following metrics are included in the scope.
+The calculation of the following metrics is suggested to be included in the scope:
 
-The RECOMMENDED measurement period is 1 second, but other values are also possible.
+- Transmission Delay (or Latency) {{transmission-delay}},
+- Interarrival Jitter {{jitter-rfc3550}},
+- Time-Stamped Delay Factor (TS-DF) {{ts-df}},
+- Total Number of Received Payloads {{received-payloads}},
+- Total Number of Missing Payloads {{missing-payloads}},
+- Total Number of Reordered Payloads and Reordering Distance {{reordered-payloads}},
+- and others metrics as defined below.
 
-## Transmission Delay
+The RECOMMENDED measurement period is 1 second, however, alternative period length is also possible. This value is dictated by the TS-DF metric specification {{EBU3337}}.
 
-The transmission delay is measured based on the system clock (NTP 64-Bit Timestamp).
-It is important to check and set up the synchronization of clocks between sender and receiver machines before the experiment
-to gain transmission delay values closer to the actual one.
-Otherwise there will be a certain shift.
-Anyway the value can be used to determine if and how much the transmission delay changes.
+## Transmission Delay {#transmission-delay}
 
-The transmission delay (TD) sample is calculated from the system clock value (T_NTP_RCV) on the receiving side at the moment
-the payload is received by an application and the NTP 64-Bit Timestamp in the payload (T_NTP_SND):
+Transmission Delay (or Latency) is measured based on the system clock (NTP 64-Bit Timestamp {{payload-structure}}).
+It is RECOMMENDED to synchronize the clocks on both sender and receiver machines before an experiment
+so that an error associated with a clock drift is as less as possible.
+
+Transmission Delay (TD) sample is calculated at the receiver side at the moment a payload is received by an application:
 
 ~~~
 TD = T_NTP_RCV - T_NTP_SND
 ~~~
 
-Note that the resulting value will be affected by clock drift.
+where
+- T_NTP_RCV is the system clock time when the payload arrives at the receiver.
+  Note that for QUIC streams, the T_NTP_RCV is the time when the very last byte of a stream is received by an application.
+- T_NTP_SND is the NTP 64-Bit Timestamp value extracted from the payload.
 
-In the case of QUIC STREAMS the T_NTP_RCV is the time when the last byte of the stream is received by the application.
+Note that TD value will be affected by the clock drift, the difference in the system time of the two clocks at the sender and at the receiver.
 
-Minimum (TD_MIN) and maximum (TD_MAX) transmission delay values are reset to N/A
-at the start of each measurement period while smoothed value (TD_SMTH) isn't reset and is calculated during the entire experiment.
+Minimum (TD_MIN) and maximum (TD_MAX) delay estimates MUST be reset to "not available" (N/A)
+at the start of each measurement period, while the smoothed value (TD_SMOOTHED) MUST NOT be reset and the calculation SHOULD continue during the entire experiment.
+Here and throughout the current document, smoothing means applying an exponentially weighted moving average (EWMA).
 
 ~~~
 TD_MIN = MIN(TD_MIN, TD);
 TD_MAX = MAX(TD_MAX, TD);
-TD_SMTH = RMA(TD_SMTH, TD).
+TD_SMOOTHED = EWMA(TD_SMOOTHED, TD).
 ~~~
 
+## Interarrival Jitter {#jitter-rfc3550}
 
-## Interarrival Jitter
+Interarrival Jitter is calculated as defined in {{RFC3550}}. It is based on the concept of the Relative Transit Time between pairs of consecutive payloads
+received not necessarily in sequence (meaning that reordering is ignored), and is defined to be the smoothed average of the difference in payloads spacing
+at the receiver compared to the sender for a pair of payloads.
 
-THe Interarrival Jitter is calculated based on the {{RFC3550}}.
+The calculation is based on the Monotonic Clock Timestamp {{payload-structure}} extracted from the payload. As jitter is calculated as an EWMA of delay variations,
+it MUST NOT be reset at the start of each measurement period.
 
-The Monotonic Clock Timestamp is used for Jitter measurement.
-This value is smoothed and MUST NOT be reset at the start of each measurement period.
+## Time-Stamped Delay Factor (TS-DF) {#ts-df}
 
-## Time-Stamped Delay Factor (TS-DF)
+Time-Stamped Delay Factor metric is calculated as defined in {{EBU3337}}.
 
-Time-Stamped Delay Factor (TS-DF) {{EBU3337}}.
-
-The Monotonic Clock Timestamp for the TS-DF measurement.
-Unlike the jitter algorithm in {{RFC3550}}, the TS-DF algorithm does not use a smoothing factor
+The calculation of TS-DF samples is based on the Monotonic Clock Timestamp {{payload-structure}} extracted from the payload.
+Unlike the algorithm defined in {{RFC3550}}, TS-DF one does not use a smoothing factor
 and therefore gives a very accurate instantaneous result.
-As per the specification, the recommended measurement period is 1 second, but other values are also possible.
 
+## Total Number of Received Payloads {#received-payloads}
 
-## The Total Number of Received Payloads
+A counter is initialized with zero and incremented on each payload read. The value MUST NOT be reset at the start of each measurement period.
 
-A counter is initialized with zero and incremented on each payload read.
+## Total Number of Missing Payloads {#missing-payloads}
 
-## The Total Number of Missing Payloads
+A counter is initialized with zero and is incremented each time a discontinuity in consecutive payloads sequence numbers (Payload Sequence Number {{payload-structure}})
+is determined. Missing sequence numbers MUST be recorded. The counter is decremented by one once a payload with missing sequence number is received out of order.
+The value MUST NOT be reset at the start of each measurement period.
 
-A counter is initialized with zero and is incremented each time a discontinuity in consecutive Payload Sequence Number values
-is observed. The missing sequence numbers MUST be recorded. The counter is decremented by one if a missing sequence is received later on (out of order).
+## Total Number of Reordered Payloads and Reordering Distance {#reordered-payloads}
 
-## The total number of reordered packets and reordering distance
-
-A counter is initialized with zero and is incremented each time the Payload Sequence Number value
+A counter is initialized with zero and is incremented each time the Payload Sequence Number {{payload-structure}} value
 precedes the next Expected Payload Sequence Number.
+
 The next Expected Payload Sequence Number is initialized with zero and is updated if the Payload Sequence Number
 value of a received payload incremented by one exceeds the current Expected Payload Sequence Number value.
 
-## The Number of Malformed Payloads
+The value MUST NOT be reset at the start of each measurement period.
+
+TODO: Reordering Distance.
+
+## The Number of Corrupted Payloads
 
 TODO
 
 ## The Number of Duplicated Payloads
 
 TODO
-
 
 # Security Considerations
 

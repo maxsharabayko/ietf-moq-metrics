@@ -48,6 +48,17 @@ normative:
     date: 29 January, 2010
 
 informative:
+  I-D.draft-kpugin-rush:
+  I-D.draft-lcurley-warp:
+  I-D.draft-sharabayko-srt-over-quic:
+  I-D.draft-engelbart-rtp-over-quic:
+  I-D.draft-jennings-moq-quicr-arch:
+  I-D.draft-rtpfolks-quic-rtp-over-quic:
+  I-D.draft-gruessing-moq-requirements:
+  I-D.draft-shi-quic-dtp:
+  I-D.draft-sharabayko-srt:
+  I-D.draft-ietf-quic-qlog-main-schema:
+  I-D.draft-huitema-quic-ts:
 
 
 --- abstract
@@ -60,46 +71,39 @@ of a specific structure. The measurement is to be carried on an application leve
 
 # Introduction
 
-TODO (Maxim): 
-- Not sure whether we can use *Media over QUIC* or better "Media over QUIC" throughout the whole document?
-- I write below, perhaps, we will need to change this. Or we can rephrase that the metrics for streams are to be refined further.
-  "Both streams {{RFC9000}} and unreliable datagrams {{RFC9221}} are going to be supported, however, for the time being performance metrics {{performance-metrics}} are defined for datagrams only."
+Establishment of the Media over QUIC working group acknowledges the relevance of live media contribution and distribution
+and encourages discussions on the use cases to be considered {{I-D.draft-gruessing-moq-requirements}}.
+Several proposals complement to those discussions. Most are currently based on QUIC streams {{I-D.draft-lcurley-warp}}, {{I-D.draft-kpugin-rush}}, {{I-D.draft-jennings-moq-quicr-arch}}, {{I-D.draft-shi-quic-dtp}}.
+QUIC datagrams are yet to be considered within the group, but some related work includes {{I-D.draft-sharabayko-srt-over-quic}}, {{I-D.draft-jennings-moq-quicr-arch}}, {{I-D.draft-engelbart-rtp-over-quic}}.
 
-With an establishment of the Media over QUIC working group, ongoing discussions on the use cases to be considered {{TODO: https://datatracker.ietf.org/doc/draft-gruessing-moq-requirements/}}, and the development of several independent specifications {{TODO: https://datatracker.ietf.org/doc/html/draft-gruessing-moq-requirements-02#section-3}} based on either QUIC streams {{RFC9000}}, or datagrams {{RFC9221}}, it is important to define the way of newly emerging protocol performance evaluation.
-
+Thus, an important task is to evaluate solutions and algorithms being proposed.
 For example for live media contribution, where processing of data takes place in real time,
 it is important to estimate transmission delay and delay variation (or jitter),
 to determine data loss and reordering, as well as to calculate other transmission metrics.
-The lower the observed jitter level, the smaller the decoder buffer needed, and the higher the confidence we can have in a given transmission latency setting.
+The lower the observed jitter level is, the smaller is the decoder buffer needed, and the higher is the confidence in an expected transmission latency.
 
-The current draft discusses an approach of objectively measuring transmission delay, jitter, and other performance metrics{{performance-metrics}} for a QUIC {{RFC9000}} connection using an artificially generated payload of a specific structure {{payload-format}}.
-Both streams {{RFC9000}} and unreliable datagrams {{RFC9221}} are going to be supported, however, for the time being performance metrics {{performance-metrics}} are defined for datagrams only.
+The current draft discusses an approach of objectively measuring transmission delay, jitter, and other performance metrics {{performance-metrics}}
+for any media protocol over a QUIC connection using an artificially generated payload of a specific structure {{payload-format}}.
+Both streams {{RFC9000}} and unreliable datagrams {{RFC9221}} are to be supported. However, it is important to highlight the difference between the two.
+Thus a sub goal is to try to find a universal approach to evaluate performance metrics for both streams and datagrams,
+providing a common basis for comparison.
 
-TODO (Maxim): Should we mention that this is done at an application (or application protocol) level?
+To be independent from a media protocol over QUIC, the measurement is to be carried on an application level, probably involving QUIC-level statistics where needed.
 
 This approach could be used during development of the *Media over QUIC* protocol to:
 
-- compare the independent implementations of the *Media over QUIC* protocol, or perform regression testing of a given implementation,
-- evaluate various congestion control schemes being considered for implementation,
-- evaluate the performance and efficiency of QUIC streams versus datagrams,
-- TODO(Maxim - If we decide to consider other protocols, not QUIC only): compare *Media over QUIC* protocol performance against other protocols.
+- compare the independent proposals and implementations of the *Media over QUIC* protocol,
+- perform regression testing of a certain implementation or proposal,
+- evaluate various congestion control schemes for live media,
+- maybe compare *Media over QUIC* protocol performance against other protocols, e.g. RTP over QUIC {{I-D.draft-engelbart-rtp-over-quic}} or SRT {{I-D.draft-sharabayko-srt}}.
 
-QUIC, as a protocol, provides a powerful set of statistics which can be used in addition to the defined procedure. There are, however, several things to keep in mind:
+QUIC, as a protocol, provides a powerful set of statistics which can be used in addition to the defined procedure.
+There are, however, several things to keep in mind:
 
-- Independent QUIC transport implementations do not all necessarily support the same set of statistics and the format isn't necessarily the same among different libraries.
-- QUIC packets do not have a timestamp field to allow the measurement of one-way delays. There is an experimental draft {{TODO: https://datatracker.ietf.org/doc/draft-huitema-quic-ts/}}, however, which proposes the definition of a TIMESTAMP frame carrying the time at which a packet is sent.
+- Independent QUIC transport implementations do not necessarily support the same set of statistics and the format isn't necessarily the same among different libraries.
+  Although {{I-D.draft-ietf-quic-qlog-main-schema}} might be helpful in a way.
 
-(TODO: this we could put as 2 separate paragraphs below the QUIC stats point to keep in mind)
-- An artificially generated payload {{payload-format}} may be of a random structure that allows to emulate various scenarios and agree on a set of test procedures and cases for the newly emerging protocol. (TODO Maxim: You can say here something about putting the whole gop inside, or 1 frame, or something like that. The idea is that we could emulate whatever we want and that the payload isn't limited to any size, etc.)
-- (TODO Maxim: Don't know, but let's discuss. Something related to the specifics of streams & datagrams. We need a way of adequately comparing transmission via streams vs datagrams. There are nuances. Like the calculation of metrics for datagrams would be per paсket, for streams - once the stream is fully delivered or??? )
-
-// TODO Remove (This is from QUIC datagrams I guess) When a QUIC endpoint receives a valid DATAGRAM frame, it SHOULD
-   deliver the data to the application immediately, as long as it is
-   able to process the frame and can store the contents in memory.
-
-TODO (Maxim):
-- Idea of generating payloads of variable length to emulate I, P, B frames and different scenarious.
-- We need a method to compare streams and datagrams at the same amount of data -> message number, groups of datagrams.
+- QUIC packets themselves do not have a timestamp field to allow the measurement of one-way delays. Although there is a related draft proposal {{I-D.draft-huitema-quic-ts}}, which proposes the definition of a TIMESTAMP frame.
 
 ## Requirements Notation
 
@@ -115,6 +119,23 @@ document are to be interpreted as described in {{RFC2119}}.
 
 A payload of a specific format {{payload-structure}} MUST be artificially generated
 to enable the calculation of performance metrics at the receiver side.
+
+The artificially generated payload by its size SHOULD roughly represent a media unit
+that a hypothetical decoder can decode. For example, in case of a video stream,
+one payload can represent the whole frame or a slice of that frame that a decoder can process.
+The arrival of the whole frame forms the actual delay for a viewer/decoder.
+Even if a frame is partially received earlier, it will be decoded and presented with the reception
+of a last macroblock or with dropping of the remaining parts of the frame.
+
+The artificially generated payload MUST provide means of estimating
+transmission delay and full or partial loss of the payload.
+
+The artificially generated payload SHOULD be of a variable length
+to represent different sizes of various types of payload and various types of video frames (I, P, B).
+
+The approach MUST provide a common basis for comparison independent (or as independent as possible) of
+whether QUIC streams or datagrams are used as a transport.
+
 
 ~~~
    0                   1                   2                   3
@@ -179,15 +200,19 @@ Remaining Payload: variable length.
   starting with value of the remainder after dividing the Payload Sequence Number by 32
   and followed by sequentially increasing values.
 
-In the case of QUIC streams, the payload can be as long as the specified stream length and MUST account for the entire stream.
+For example, to emulate the "one video frame per QUIC stream" approach the payload length MUST account for the entire stream.
 As stream data is sent in the form of STREAM frames, the very first frame will contain
-Payload Sequence Number, NTP 64-Bit Timestamp, Monotonic Clock Timestamp, Payload Length, and
-MD5 Checksum fields, as well as some of the remaining payload data. Consequent STREAM frames will carry the rest of the payload.
+Payload Sequence Number, PP flags, Group Sequence Number and the rest fields of the header,
+as well as some of the remaining payload data. Consequent STREAM frames will carry the rest of the payload.
+Both the Payload Sequence Number and the Group Sequence Number fields MUST be increased for each payload.
 
-In the case of QUIC datagrams, the payload MUST fit into a single DATAGRAM frame.
+To emulate the "one GOP per QUIC stream" approach, one QUIC stream will transport several payloads of different lengths.
+Both the Payload Sequence Number and the Group Sequence Number fields MUST be increased for each payload.
+
+To emulate the "video frame over QUIC datagrams" approach the payload length MUST fit in a single DATAGRAM frame.
 The Payload Sequence Number field MUST be increased for each sent DATAGRAM frame.
-
-TODO (Maxim): Messages !!! Then change a bit the text above.
+A sequence of payloads SHOULD have the same Group Sequence Number, with the Payload Position Flag marking the start, the middle, and the end of the group sequence.
+Thus the whole group sequence marks a represent video frame.
 
 # Performance Metrics {#performance-metrics}
 
@@ -209,16 +234,15 @@ Transmission Delay (or Latency) is measured based on the system clock (NTP 64-Bi
 It is RECOMMENDED to synchronize the clocks on both sender and receiver machines before an experiment
 so that an error associated with a clock drift is as less as possible.
 
-Transmission Delay (TD) sample is calculated at the receiver side at the moment a payload is received by an application:
+Transmission Delay (TD) sample is calculated at the receiver side at the moment a payload group is received by an application:
 
 ~~~
 TD = T_NTP_RCV - T_NTP_SND
 ~~~
 
 where
-- T_NTP_RCV is the system clock time when the payload arrives at the receiver.
-  Note that for QUIC streams, the T_NTP_RCV is the time when the very last byte of a stream is received by an application.
-- T_NTP_SND is the NTP 64-Bit Timestamp value extracted from the payload.
+- T_NTP_RCV is the system clock time when the last payload of a group arrives at the receiver.
+- T_NTP_SND is the NTP 64-Bit Timestamp value extracted from the same payload.
 
 Note that TD value will be affected by the clock drift, the difference in the system time of the two clocks at the sender and at the receiver.
 
@@ -253,11 +277,19 @@ and therefore gives a very accurate instantaneous result.
 
 A counter is initialized with zero and incremented on each payload read. The value MUST NOT be reset at the start of each measurement period.
 
+## Total Number of Received Groups {#received-groups}
+
+A counter is initialized with zero and incremented on each payload group read. The value MUST NOT be reset at the start of each measurement period.
+
 ## Total Number of Missing Payloads {#missing-payloads}
 
 A counter is initialized with zero and is incremented each time a discontinuity in consecutive payloads sequence numbers (Payload Sequence Number {{payload-structure}})
 is determined. Missing sequence numbers MUST be recorded. The counter is decremented by one once a payload with missing sequence number is received out of order.
 The value MUST NOT be reset at the start of each measurement period.
+
+## Total Number of Missing Groups {#missing-grous}
+
+The same as the Total Number of Missing Payloads, but for payload groups.
 
 ## Total Number of Reordered Payloads and Reordering Distance {#reordered-payloads}
 
@@ -273,11 +305,25 @@ TODO: Reordering Distance.
 
 ## The Number of Corrupted Payloads
 
-TODO
+TODO: Add description.
+
+The payload is corrupted, meaning contents were altered. This MUST NOT happen, but still MUST be checked.
+
+## The Number of Partial Payloads
+
+TODO: Add description.
+
+The payload is only partially received.
+
+## The Number of Partial Groups
+
+TODO: Add description.
+
+A group of payloads is only partially received.
 
 ## The Number of Duplicated Payloads
 
-TODO
+TODO: Add description.
 
 # Security Considerations
 

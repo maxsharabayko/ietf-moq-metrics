@@ -66,11 +66,9 @@ TODO (Maxim):
 - I write below, perhaps, we will need to change this. Or we can rephrase that the metrics for streams are to be refined further.
   "Both streams {{RFC9000}} and unreliable datagrams {{RFC9221}} are going to be supported, however, for the time being performance metrics {{performance-metrics}} are defined for datagrams only."
 
-TODO (Maria): Media over QUIC has emerged.
+With an establishment of the Media over QUIC (moq) working group {{TODO: https://datatracker.ietf.org/wg/moq/about/}}, ongoing discussions on the use cases to be considered {{TODO: https://datatracker.ietf.org/doc/draft-gruessing-moq-requirements/}}, and the development of several independent specifications {{TODO: https://datatracker.ietf.org/doc/html/draft-gruessing-moq-requirements-02#section-3}} based on either QUIC streams {{RFC9000}}, or datagrams {{RFC9221}}, it is important to define the way of newly emerging protocol performance evaluation.
 
-// refer to https://datatracker.ietf.org/doc/draft-gruessing-moq-requirements/
-
-For live media contribution, where processing of data takes place in real time,
+For example for live media contribution, where processing of data takes place in real time,
 it is important to estimate transmission delay and delay variation (or jitter),
 to determine data loss and reordering, as well as to calculate other transmission metrics.
 The lower the observed jitter level, the smaller the decoder buffer needed, and the higher the confidence we can have in a given transmission latency setting.

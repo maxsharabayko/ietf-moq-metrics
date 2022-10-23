@@ -124,6 +124,9 @@ to enable the calculation of performance metrics at the receiver side.
   |                     Payload Sequence Number                   |
   |                           (64 bit)                            |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |P P|                  Group Sequence Number                    |
+  |                                                               |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   |                       NTP 64-Bit Timestamp                    |
   |                           (64 bit)                            |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -147,6 +150,14 @@ to enable the calculation of performance metrics at the receiver side.
 
 Payload Sequence Number: 64 bits.
 : A sequential number of the payload. Starts from zero and is incremented for every payload that follows.
+
+PP: 2 bits.
+: Payload position flag. This field indicates the position of the payload sequence in the
+group of payload sequences. The value "10b" means the first payload sequence of the group.
+"00b" indicates a packet in the middle of the group. "01b" designates the last packet. If a single payload packet forms the whole group, the value is "11b".
+
+Group Sequence Number: 62 bits.
+: A sequential number of the payload group. Starts from zero and is incremented for every payload group that follows.
 
 NTP 64-Bit Timestamp: 64 bits.
 : NTP 64-bit system clock timestamp {{RFC5905}} {{RFC8877}} of the moment when a payload has been generated

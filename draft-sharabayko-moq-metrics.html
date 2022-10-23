@@ -1,0 +1,1701 @@
+<!DOCTYPE html>
+<html lang="en" class="Internet-Draft">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>Estimating Transmission Metrics on a QUIC Connection</title>
+<meta content="Maxim Sharabayko" name="author">
+<meta content="Maria Sharabayko" name="author">
+<meta content="
+       This document defines an approach of objectively measuring transmission such metrics like delay, jitter,
+and loss-related transmission metrics for a QUIC   connection using an artificially generated payload
+of a specific structure. The measurement is to be carried on an application level to be protocol-independent. 
+    " name="description">
+<meta content="xml2rfc 3.15.1" name="generator">
+<meta content="media over quic" name="keyword">
+<meta content="metrics" name="keyword">
+<meta content="draft-sharabayko-moq-metrics-latest" name="ietf.draft">
+<!-- Generator version information:
+  xml2rfc 3.15.1
+    Python 3.10.5
+    appdirs 1.4.4
+    ConfigArgParse 1.5.3
+    google-i18n-address 2.5.2
+    html5lib 1.1
+    intervaltree 3.1.0
+    Jinja2 3.1.2
+    kitchen 1.2.6
+    lxml 4.9.1
+    MarkupSafe 2.1.1
+    pycountry 22.3.5
+    PyYAML 6.0
+    requests 2.27.1
+    setuptools 59.4.0
+    six 1.16.0
+-->
+<link href="draft-sharabayko-moq-metrics.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Lora SemiBold'), local('Lora-SemiBold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-semibold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Cabin Condensed';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Cabin Condensed SemiBold'), local('CabinCondensed-SemiBold'), url('https://martinthomson.github.io/rfc-css/fonts/cabincondensed-semibold-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Cabin Condensed';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Cabin Condensed SemiBold'), local('CabinCondensed-SemiBold'), url('https://martinthomson.github.io/rfc-css/fonts/cabincondensed-semibold-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Cabin Condensed';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Cabin Condensed SemiBold'), local('CabinCondensed-SemiBold'), url('https://martinthomson.github.io/rfc-css/fonts/cabincondensed-semibold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  color-scheme: light dark;
+  --background-color: #fff;
+  --text-color: #222;
+  --title-color: #191919;
+  --link-color: #2a6496;
+  --highlight-color: #f9f9f9;
+  --line-color: #eee;
+  --pilcrow-weak: #ddd;
+  --pilcrow-strong: #bbb;
+  --small-font-size: 14.5px;
+  --font-mono: 'Oxygen Mono', monospace;
+  scrollbar-color: #bbb #eee;
+}
+body {
+  max-width: 600px;
+  margin: 75px auto;
+  padding: 0 5px;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  font: 16px/22px "Lora", serif;
+  scroll-behavior: smooth;
+}
+
+.ears {
+  display: none;
+}
+
+/* headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Cabin Condensed", sans-serif;
+  font-weight: 600;
+  margin: 0.8em 0 0.3em;
+  font-size-adjust: 0.5;
+  color: var(--title-color);
+}
+h1#title {
+  font-size: 32px;
+  line-height: 40px;
+  clear: both;
+}
+h1#title, h1#rfcnum {
+  margin: 1.5em 0 0.2em;
+}
+h1#rfcnum + h1#title {
+  margin: 0.2em 0;
+}
+
+h1, h2, h3 {
+  font-size: 22px;
+  line-height: 27px;
+}
+h4, h5, h6 {
+  font-size: 20px;
+  line-height: 24px;
+}
+
+/* general structure */
+.author {
+  padding-bottom: 0.3em;
+}
+#abstract+p {
+  font-size: 18px;
+  line-height: 24px;
+}
+#abstract+p code, #abstract+p samp, #abstract+p tt {
+  font-size: 16px;
+  line-height: 0;
+}
+
+p {
+  padding: 0;
+  margin: 0.5em 0;
+  text-align: left;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+/* font-family isn't space-separated, but =~ will have to do */
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  border: none;
+  /* this isn't optimal, but it's an existence proof.  PrinceXML doesn't
+     support flexbox yet.
+  */
+  display: table;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 0.5em 2em;
+}
+:is(ol, ul) :is(ol, ul) {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+:is(ul, ol).compact, .ulCompact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+  clear: left;
+  --indent: 3ch;
+  /* --indent: attr(indent ch); not supported in any browser, but we can dream */
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+  min-width: 20ch;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+dl > dd {
+  margin-bottom: .8em;
+  margin-left: var(--indent) !important; /* stupid element overrides */
+  min-height: 2ex;
+}
+:is(dl.compact, .dlCompact) > dd {
+  margin-bottom: 0;
+}
+:is(dl.compact, .dlCompact) > dd > :is(:first-child, .break:first-child + *) {
+  margin-top: 0;
+}
+:is(dl.compact, .dlCompact) > dd > :is(:last-child) {
+  margin-bottom: 0;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0;
+}
+dl .break {
+  display: none;
+}
+
+/* links */
+a, a[href].selfRef:hover {
+  text-decoration: none;
+}
+a[href].selfRef {
+  color: var(--text-color);
+}
+a[href] {
+  color: var(--link-color);
+}
+a[href]:hover {
+  text-decoration: underline;
+}
+a[href].selfRef:hover {
+  background-color: var(--highlight-color);
+}
+a.xref {
+  white-space: nowrap;
+}
+
+/* Figures */
+tt, code, pre {
+  background-color: var(--highlight-color);
+  font: 14px/22px var(--font-mono);
+}
+tt, code {
+  /* changing the font for inline elements leads to different ascender
+     and descender heights; as we want to retain baseline alignment,
+     remove leading to avoid altering the final height of lines */
+  line-height: 0;
+}
+:is(h1, h2, h3, h4, h5, h6) :is(tt, code) {
+  font-size: 84%;
+}
+pre {
+  border: 1px solid var(--line-color);
+  font-size: 13.5px;
+  line-height: 16px;
+  letter-spacing: -0.2px;
+  margin: 5px;
+  padding: 5px;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0.5em 0;
+  padding: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption, caption {
+  font-style: italic;
+  margin: 0.5em 1.5em;
+  text-align: left;
+}
+@media screen {
+  /* Auto-collapse boilerplate. */
+  :is(#status-of-memo, #copyright) p {
+    margin: -2px 0;
+    max-height: 0;
+    transition: max-height 2s ease, margin 0.5s ease 0.5s;
+    overflow: hidden;
+  }
+  :is(#status-of-memo, #copyright):hover p,
+  :is(#status-of-memo, #copyright) h2:target ~ p {
+    margin: 0.5em 0;
+    max-height: 500px;
+    overflow: auto;
+  }
+  pre, svg {
+    display: inline-block;
+    overflow-x: auto;
+  }
+  pre {
+    max-width: 100%;
+    width: calc(100% - 22px - 1em);
+  }
+  svg {
+    max-width: calc(100% - 22px - 1em);
+  }
+  figure pre {
+    display: block;
+    width: calc(100% - 25px);
+  }
+  :is(pre, svg) + .pilcrow {
+    display: inline-block;
+    vertical-align: text-bottom;
+    padding-bottom: 8px;
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 0 2em;
+  font-style: italic;
+}
+blockquote {
+  margin: 1em 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+
+/* tables */
+table {
+  max-width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+}
+table.right {
+  margin-left: auto;
+}
+table.center {
+  margin-left: auto;
+  margin-right: auto;
+}
+table.left {
+  margin-right: auto;
+}
+thead, tbody {
+  border: 1px solid var(--line-color);
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 5px 10px;
+}
+th {
+  background-color: var(--line-color);
+}
+:is(tr:nth-child(2n), thead+tbody > tr:nth-child(2n+1)) > td {
+  background-color: var(--background-color);
+}
+:is(tr:nth-child(2n+1), thead+tbody > tr:nth-child(2n)) > td {
+  background-color: var(--highlight-color);
+}
+table caption {
+  margin: 0;
+  padding: 3px 0 3px 1em;
+}
+table p {
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  margin-left: 3px;
+  opacity: 0.2;
+  user-select: none;
+}
+a.pilcrow[href] { color: var(--pilcrow-weak); }
+a.pilcrow[href]:hover { text-decoration: none; }
+@media not print {
+  :hover > a.pilcrow {
+    opacity: 1;
+  }
+  a.pilcrow[href]:hover {
+    color: var(--pilcrow-strong);
+    background-color: transparent;
+  }
+}
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid var(--line-color);
+}
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: 600;
+  font-size: 14.5px;
+}
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: var(--small-font-size);
+  line-height: 18px;
+  --identifier-width: 15ch;
+}
+#identifiers dt {
+  width: var(--identifier-width);
+  min-width: var(--identifier-width);
+  clear: left;
+  float: left;
+  text-align: right;
+}
+#identifiers dd {
+  margin: 0;
+  margin-left: calc(1em + var(--identifier-width)) !important;
+  min-width: 5em;
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #999;
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+#toc nav ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+#toc nav li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+#toc a.xref {
+  white-space: normal;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dt:target::before {
+  content: "⇒";
+  width: 15px;
+  margin: 0 10px 0 -25px;
+}
+.references dd {
+  margin-left: 8em !important;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+#rfc\.index\.index + ul {
+  margin-left: 0;
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+@media (min-width: 500px) {
+  #authors-addresses > section {
+    column-count: 2;
+    column-gap: 20px;
+  }
+  #authors-addresses > section > h2 {
+    column-span: all;
+  }
+  /* hack for break-inside: avoid-column */
+  #authors-addresses address {
+    display: inline-block;
+    break-inside: avoid-column;
+  }
+}
+
+.rfcEditorRemove p:first-of-type {
+  font-style: italic;
+}
+.cref {
+  background-color: rgba(249, 232, 105, 0.3);
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 929px) {
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    border-bottom: 1px solid #ccc;
+    opacity: 0.6;
+  }
+  #toc.active {
+      opacity: 1;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 2px 0 2px 6px;
+    padding-right: 1em;
+    font-size: 18px;
+    line-height: 24px;
+    min-width: 190px;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 8px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    background-color: var(--background-color);
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+  #toc.active nav {
+    display: block;
+  }
+  /* Make the collapsed ToC header render white on gray also when it's a link */
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+  #toc a.toplink {
+    margin-top: 2px;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 930px) {
+  body {
+    padding-right: 360px;
+    padding-right: calc(min(180px + 20%, 500px));
+  }
+  #toc {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    right: calc(50vw - 480px);
+    width: 312px;
+    margin: 0;
+    padding: 0;
+    z-index: 1;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 2em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  #toc nav > ul  {
+    margin-bottom: 2em;
+  }
+  #toc ul {
+    margin: 0 0 0 4px;
+    font-size: var(--small-font-size);
+  }
+  #toc ul :is(p, li) {
+    margin: 2px 0;
+    line-height: 22px;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+}
+
+/* Changes introduced to fix issues found during implementation */
+
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin: 8px 0.5em 0;
+}
+
+/* Provide styling for table cell text alignment */
+table .text-left {
+  text-align: left;
+}
+table .text-center {
+  text-align: center;
+}
+table .text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 20em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  dd {
+    page-break-before: avoid;
+  }
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+
+/* Dark mode. */
+@media (prefers-color-scheme: dark) {
+:root {
+  --background-color: #121212;
+  --text-color: #f0f0f0;
+  --title-color: #fff;
+  --link-color: #4da4f0;
+  --highlight-color: #282828;
+  --line-color: #444;
+  --pilcrow-weak: #444;
+  --pilcrow-strong: #666;
+  scrollbar-color: #777 #333;
+}
+}
+
+/* SVG Trick: a prefix match works because only black and white are allowed */
+svg :is([stroke="black"], [stroke^="#000"]) {
+  stroke: var(--text-color);
+}
+svg :is([stroke="white"], [stroke^="#fff"]) {
+  stroke: var(--background-color);
+}
+svg :is([fill="black"], [fill^="#000"], :not([fill])) {
+  fill: var(--text-color);
+}
+svg :is([stroke="fill"], [fill^="#fff"]) {
+  fill: var(--background-color);
+}
+</style>
+
+</head>
+<body class="xml2rfc">
+<table class="ears">
+<thead><tr>
+<td class="left">Internet-Draft</td>
+<td class="center">quic-delay</td>
+<td class="right">October 2022</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Sharabayko &amp; Sharabayko</td>
+<td class="center">Expires 26 April 2023</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-workgroup">Workgroup:</dt>
+<dd class="workgroup">moq</dd>
+<dt class="label-internet-draft">Internet-Draft:</dt>
+<dd class="internet-draft">draft-sharabayko-moq-metrics-latest</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2022-10-23" class="published">23 October 2022</time>
+    </dd>
+<dt class="label-intended-status">Intended Status:</dt>
+<dd class="intended-status">Informational</dd>
+<dt class="label-expires">Expires:</dt>
+<dd class="expires"><time datetime="2023-04-26">26 April 2023</time></dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">M. P. Sharabayko</div>
+<div class="org">Haivision Network Video, GmbH</div>
+</div>
+<div class="author">
+      <div class="author-name">M. A. Sharabayko</div>
+<div class="org">Haivision Network Video, GmbH</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="title">Estimating Transmission Metrics on a QUIC Connection</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document defines an approach of objectively measuring transmission such metrics like delay, jitter,
+and loss-related transmission metrics for a QUIC <span>[<a href="#RFC9000" class="cite xref">RFC9000</a>]</span> connection using an artificially generated payload
+of a specific structure. The measurement is to be carried on an application level to be protocol-independent.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+        This Internet-Draft is submitted in full conformance with the
+        provisions of BCP 78 and BCP 79.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+        Internet-Drafts are working documents of the Internet Engineering Task
+        Force (IETF). Note that other groups may also distribute working
+        documents as Internet-Drafts. The list of current Internet-Drafts is
+        at <span><a href="https://datatracker.ietf.org/drafts/current/">https://datatracker.ietf.org/drafts/current/</a></span>.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+        Internet-Drafts are draft documents valid for a maximum of six months
+        and may be updated, replaced, or obsoleted by other documents at any
+        time. It is inappropriate to use Internet-Drafts as reference
+        material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-4">
+        This Internet-Draft will expire on 26 April 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2022 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-requirements-notation" class="internal xref">Requirements Notation</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-conventions-and-definitions" class="internal xref">Conventions and Definitions</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-payload-format" class="internal xref">Payload Format</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-performance-metrics" class="internal xref">Performance Metrics</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-transmission-delay" class="internal xref">Transmission Delay</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-interarrival-jitter" class="internal xref">Interarrival Jitter</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-time-stamped-delay-factor-t" class="internal xref">Time-Stamped Delay Factor (TS-DF)</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4">
+                <p id="section-toc.1-1.4.2.4.1"><a href="#section-4.4" class="auto internal xref">4.4</a>.  <a href="#name-total-number-of-received-pa" class="internal xref">Total Number of Received Payloads</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.5">
+                <p id="section-toc.1-1.4.2.5.1"><a href="#section-4.5" class="auto internal xref">4.5</a>.  <a href="#name-total-number-of-received-gr" class="internal xref">Total Number of Received Groups</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.6">
+                <p id="section-toc.1-1.4.2.6.1"><a href="#section-4.6" class="auto internal xref">4.6</a>.  <a href="#name-total-number-of-missing-pay" class="internal xref">Total Number of Missing Payloads</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.7">
+                <p id="section-toc.1-1.4.2.7.1"><a href="#section-4.7" class="auto internal xref">4.7</a>.  <a href="#name-total-number-of-missing-gro" class="internal xref">Total Number of Missing Groups</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.8">
+                <p id="section-toc.1-1.4.2.8.1"><a href="#section-4.8" class="auto internal xref">4.8</a>.  <a href="#name-total-number-of-reordered-p" class="internal xref">Total Number of Reordered Payloads and Reordering Distance</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.9">
+                <p id="section-toc.1-1.4.2.9.1"><a href="#section-4.9" class="auto internal xref">4.9</a>.  <a href="#name-the-number-of-corrupted-pay" class="internal xref">The Number of Corrupted Payloads</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.10">
+                <p id="section-toc.1-1.4.2.10.1"><a href="#section-4.10" class="auto internal xref">4.10</a>. <a href="#name-the-number-of-partial-paylo" class="internal xref">The Number of Partial Payloads</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.11">
+                <p id="section-toc.1-1.4.2.11.1"><a href="#section-4.11" class="auto internal xref">4.11</a>. <a href="#name-the-number-of-partial-group" class="internal xref">The Number of Partial Groups</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.12">
+                <p id="section-toc.1-1.4.2.12.1"><a href="#section-4.12" class="auto internal xref">4.12</a>. <a href="#name-the-number-of-duplicated-pa" class="internal xref">The Number of Duplicated Payloads</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">Establishment of the Media over QUIC working group acknowledges the relevance of live media contribution and distribution
+and encourages discussions on the use cases to be considered <span>[<a href="#I-D.gruessing-moq-requirements" class="cite xref">I-D.gruessing-moq-requirements</a>]</span>.
+Several proposals complement to those discussions. Most are currently based on QUIC streams <span>[<a href="#I-D.lcurley-warp" class="cite xref">I-D.lcurley-warp</a>]</span>, <span>[<a href="#I-D.kpugin-rush" class="cite xref">I-D.kpugin-rush</a>]</span>, <span>[<a href="#I-D.jennings-moq-quicr-arch" class="cite xref">I-D.jennings-moq-quicr-arch</a>]</span>, <span>[<a href="#I-D.shi-quic-dtp" class="cite xref">I-D.shi-quic-dtp</a>]</span>.
+QUIC datagrams are yet to be considered within the group, but some related work includes <span>[<a href="#I-D.sharabayko-srt-over-quic" class="cite xref">I-D.sharabayko-srt-over-quic</a>]</span>, <span>[<a href="#I-D.jennings-moq-quicr-arch" class="cite xref">I-D.jennings-moq-quicr-arch</a>]</span>, <span>[<a href="#I-D.ietf-avtcore-rtp-over-quic" class="cite xref">I-D.ietf-avtcore-rtp-over-quic</a>]</span>.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">Thus, an important task is to evaluate solutions and algorithms being proposed.
+For example for live media contribution, where processing of data takes place in real time,
+it is important to estimate transmission delay and delay variation (or jitter),
+to determine data loss and reordering, as well as to calculate other transmission metrics.
+The lower the observed jitter level is, the smaller is the decoder buffer needed, and the higher is the confidence in an expected transmission latency.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">The current draft discusses an approach of objectively measuring transmission delay, jitter, and other performance metrics <a href="#performance-metrics" class="auto internal xref">Section 4</a>
+for any media protocol over a QUIC connection using an artificially generated payload of a specific structure <a href="#payload-format" class="auto internal xref">Section 3</a>.
+Both streams <span>[<a href="#RFC9000" class="cite xref">RFC9000</a>]</span> and unreliable datagrams <span>[<a href="#RFC9221" class="cite xref">RFC9221</a>]</span> are to be supported. However, it is important to highlight the difference between the two.
+Thus a sub goal is to try to find a universal approach to evaluate performance metrics for both streams and datagrams,
+providing a common basis for comparison.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">To be independent from a media protocol over QUIC, the measurement is to be carried on an application level, probably involving QUIC-level statistics where needed.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">This approach could be used during development of the <em>Media over QUIC</em> protocol to:<a href="#section-1-5" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1-6.1">compare the independent proposals and implementations of the <em>Media over QUIC</em> protocol,<a href="#section-1-6.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.2">perform regression testing of a certain implementation or proposal,<a href="#section-1-6.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.3">evaluate various congestion control schemes for live media,<a href="#section-1-6.3" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-6.4">maybe compare <em>Media over QUIC</em> protocol performance against other protocols, e.g. RTP over QUIC <span>[<a href="#I-D.ietf-avtcore-rtp-over-quic" class="cite xref">I-D.ietf-avtcore-rtp-over-quic</a>]</span> or SRT <span>[<a href="#I-D.sharabayko-srt" class="cite xref">I-D.sharabayko-srt</a>]</span>.<a href="#section-1-6.4" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-1-7">QUIC, as a protocol, provides a powerful set of statistics which can be used in addition to the defined procedure.
+There are, however, several things to keep in mind:<a href="#section-1-7" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1-8.1">Independent QUIC transport implementations do not necessarily support the same set of statistics and the format isn't necessarily the same among different libraries.
+Although <span>[<a href="#I-D.ietf-quic-qlog-main-schema" class="cite xref">I-D.ietf-quic-qlog-main-schema</a>]</span> might be helpful in a way.<a href="#section-1-8.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-8.2">QUIC packets themselves do not have a timestamp field to allow the measurement of one-way delays. Although there is a related draft proposal <span>[<a href="#I-D.huitema-quic-ts" class="cite xref">I-D.huitema-quic-ts</a>]</span>, which proposes the definition of a TIMESTAMP frame.<a href="#section-1-8.2" class="pilcrow">¶</a>
+</li>
+      </ul>
+<div id="requirements-notation">
+<section id="section-1.1">
+        <h3 id="name-requirements-notation">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-requirements-notation" class="section-name selfRef">Requirements Notation</a>
+        </h3>
+<p id="section-1.1-1">The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>",
+"<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this
+document are to be interpreted as described in <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span>.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="conventions-and-definitions">
+<section id="section-2">
+      <h2 id="name-conventions-and-definitions">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-conventions-and-definitions" class="section-name selfRef">Conventions and Definitions</a>
+      </h2>
+<p id="section-2-1">The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+"<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they
+appear in all capitals, as shown here.<a href="#section-2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="payload-format">
+<section id="section-3">
+      <h2 id="name-payload-format">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-payload-format" class="section-name selfRef">Payload Format</a>
+      </h2>
+<p id="section-3-1">A payload of a specific format <a href="#payload-structure" class="auto internal xref">Figure 1</a> <span class="bcp14">MUST</span> be artificially generated
+to enable the calculation of performance metrics at the receiver side.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<p id="section-3-2">The artificially generated payload by its size <span class="bcp14">SHOULD</span> roughly represent a media unit
+that a hypothetical decoder can decode. For example, in case of a video stream,
+one payload can represent the whole frame or a slice of that frame that a decoder can process.
+The arrival of the whole frame forms the actual delay for a viewer/decoder.
+Even if a frame is partially received earlier, it will be decoded and presented with the reception
+of a last macroblock or with dropping of the remaining parts of the frame.<a href="#section-3-2" class="pilcrow">¶</a></p>
+<p id="section-3-3">The artificially generated payload <span class="bcp14">MUST</span> provide means of estimating
+transmission delay and full or partial loss of the payload.<a href="#section-3-3" class="pilcrow">¶</a></p>
+<p id="section-3-4">The artificially generated payload <span class="bcp14">SHOULD</span> be of a variable length
+to represent different sizes of various types of payload and various types of video frames (I, P, B).<a href="#section-3-4" class="pilcrow">¶</a></p>
+<p id="section-3-5">The approach <span class="bcp14">MUST</span> provide a common basis for comparison independent (or as independent as possible) of
+whether QUIC streams or datagrams are used as a transport.<a href="#section-3-5" class="pilcrow">¶</a></p>
+<span id="name-payload-structure"></span><div id="payload-structure">
+<figure id="figure-1">
+        <div class="alignLeft art-text artwork" id="section-3-6.1">
+<pre>
+   0                   1                   2                   3
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                     Payload Sequence Number                   |
+  |                           (64 bit)                            |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |P P|                  Group Sequence Number                    |
+  |                                                               |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                       NTP 64-Bit Timestamp                    |
+  |                           (64 bit)                            |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                    Monotonic Clock Timestamp                  |
+  |                           (64 bit)                            |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                        Payload Length                         |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                         MD5 Checksum                          |
+  |                                                               |
+  |                                                               |
+  |                                                               |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                       Remaining Payload                       |
+  |                                                               |
+                                (...)
+  |                                                               |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</pre>
+</div>
+<figcaption><a href="#figure-1" class="selfRef">Figure 1</a>:
+<a href="#name-payload-structure" class="selfRef">Payload Structure</a>
+        </figcaption></figure>
+</div>
+<span class="break"></span><dl class="dlParallel" id="section-3-7">
+        <dt id="section-3-7.1">Payload Sequence Number: 64 bits.</dt>
+        <dd style="margin-left: 1.5em" id="section-3-7.2">
+          <p id="section-3-7.2.1">A sequential number of the payload. Starts from zero and is incremented for every payload that follows.<a href="#section-3-7.2.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-7.3">PP: 2 bits.</dt>
+        <dd style="margin-left: 1.5em" id="section-3-7.4">
+          <p id="section-3-7.4.1">Payload position flag. This field indicates the position of the payload sequence in the
+group of payload sequences. The value "10b" means the first payload sequence of the group.
+"00b" indicates a packet in the middle of the group. "01b" designates the last packet. If a single payload packet forms the whole group, the value is "11b".<a href="#section-3-7.4.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-7.5">Group Sequence Number: 62 bits.</dt>
+        <dd style="margin-left: 1.5em" id="section-3-7.6">
+          <p id="section-3-7.6.1">A sequential number of the payload group. Starts from zero and is incremented for every payload group that follows.<a href="#section-3-7.6.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-7.7">NTP 64-Bit Timestamp: 64 bits.</dt>
+        <dd style="margin-left: 1.5em" id="section-3-7.8">
+          <p id="section-3-7.8.1">NTP 64-bit system clock timestamp <span>[<a href="#RFC5905" class="cite xref">RFC5905</a>]</span> <span>[<a href="#RFC8877" class="cite xref">RFC8877</a>]</span> of the moment when a payload has been generated
+meaning the payload generation has finished.<a href="#section-3-7.8.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-7.9">Monotonic Clock Timestamp: 64 bits.</dt>
+        <dd style="margin-left: 1.5em" id="section-3-7.10">
+          <p id="section-3-7.10.1">Monotonic clock timestamp of the moment when a payload has been generated.
+Represents microseconds elapsed since monotonic clock epoch.<a href="#section-3-7.10.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-7.11">Payload Length: 32 bits.</dt>
+        <dd style="margin-left: 1.5em" id="section-3-7.12">
+          <p id="section-3-7.12.1">The full length of the payload (including preceding "Payload Sequence Number" and both timestamp fields).<a href="#section-3-7.12.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-7.13">MD5 Checksum: 128 bits.</dt>
+        <dd style="margin-left: 1.5em" id="section-3-7.14">
+          <p id="section-3-7.14.1">A hash value to confirm the payload integrity. Calculated for the whole message with the SHA-128 checksum field
+zeroed out.<a href="#section-3-7.14.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-3-7.15">Remaining Payload: variable length.</dt>
+        <dd style="margin-left: 1.5em" id="section-3-7.16">
+          <p id="section-3-7.16.1">The remaining payload of variable length.
+Randomly generated sequence of bytes. <span class="bcp14">MAY</span> be generated as a sequence of 8-bit integers
+starting with value of the remainder after dividing the Payload Sequence Number by 32
+and followed by sequentially increasing values.<a href="#section-3-7.16.1" class="pilcrow">¶</a></p>
+</dd>
+      <dd class="break"></dd>
+</dl>
+<p id="section-3-8">For example, to emulate the "one video frame per QUIC stream" approach the payload length <span class="bcp14">MUST</span> account for the entire stream.
+As stream data is sent in the form of STREAM frames, the very first frame will contain
+Payload Sequence Number, PP flags, Group Sequence Number and the rest fields of the header,
+as well as some of the remaining payload data. Consequent STREAM frames will carry the rest of the payload.
+Both the Payload Sequence Number and the Group Sequence Number fields <span class="bcp14">MUST</span> be increased for each payload.<a href="#section-3-8" class="pilcrow">¶</a></p>
+<p id="section-3-9">To emulate the "one GOP per QUIC stream" approach, one QUIC stream will transport several payloads of different lengths.
+Both the Payload Sequence Number and the Group Sequence Number fields <span class="bcp14">MUST</span> be increased for each payload.<a href="#section-3-9" class="pilcrow">¶</a></p>
+<p id="section-3-10">To emulate the "video frame over QUIC datagrams" approach the payload length <span class="bcp14">MUST</span> fit in a single DATAGRAM frame.
+The Payload Sequence Number field <span class="bcp14">MUST</span> be increased for each sent DATAGRAM frame.
+A sequence of payloads <span class="bcp14">SHOULD</span> have the same Group Sequence Number, with the Payload Position Flag marking the start, the middle, and the end of the group sequence.
+Thus the whole group sequence marks a represent video frame.<a href="#section-3-10" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="performance-metrics">
+<section id="section-4">
+      <h2 id="name-performance-metrics">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-performance-metrics" class="section-name selfRef">Performance Metrics</a>
+      </h2>
+<p id="section-4-1">The calculation of the following metrics is suggested to be included in the scope:<a href="#section-4-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4-2.1">Transmission Delay (or Latency) <a href="#transmission-delay" class="auto internal xref">Section 4.1</a>,<a href="#section-4-2.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-4-2.2">Interarrival Jitter <a href="#jitter-rfc3550" class="auto internal xref">Section 4.2</a>,<a href="#section-4-2.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-4-2.3">Time-Stamped Delay Factor (TS-DF) <a href="#ts-df" class="auto internal xref">Section 4.3</a>,<a href="#section-4-2.3" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-4-2.4">Total Number of Received Payloads <a href="#received-payloads" class="auto internal xref">Section 4.4</a>,<a href="#section-4-2.4" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-4-2.5">Total Number of Missing Payloads <a href="#missing-payloads" class="auto internal xref">Section 4.6</a>,<a href="#section-4-2.5" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-4-2.6">Total Number of Reordered Payloads and Reordering Distance <a href="#reordered-payloads" class="auto internal xref">Section 4.8</a>,<a href="#section-4-2.6" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-4-2.7">and others metrics as defined below.<a href="#section-4-2.7" class="pilcrow">¶</a>
+</li>
+      </ul>
+<p id="section-4-3">The <span class="bcp14">RECOMMENDED</span> measurement period is 1 second, however, alternative period length is also possible. This value is dictated by the TS-DF metric specification <span>[<a href="#EBU3337" class="cite xref">EBU3337</a>]</span>.<a href="#section-4-3" class="pilcrow">¶</a></p>
+<div id="transmission-delay">
+<section id="section-4.1">
+        <h3 id="name-transmission-delay">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-transmission-delay" class="section-name selfRef">Transmission Delay</a>
+        </h3>
+<p id="section-4.1-1">Transmission Delay (or Latency) is measured based on the system clock (NTP 64-Bit Timestamp <a href="#payload-structure" class="auto internal xref">Figure 1</a>).
+It is <span class="bcp14">RECOMMENDED</span> to synchronize the clocks on both sender and receiver machines before an experiment
+so that an error associated with a clock drift is as less as possible.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2">Transmission Delay (TD) sample is calculated at the receiver side at the moment a payload group is received by an application:<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.1-3">
+<pre>
+TD = T_NTP_RCV - T_NTP_SND
+</pre><a href="#section-4.1-3" class="pilcrow">¶</a>
+</div>
+<p id="section-4.1-4">where
+- T_NTP_RCV is the system clock time when the last payload of a group arrives at the receiver.
+- T_NTP_SND is the NTP 64-Bit Timestamp value extracted from the same payload.<a href="#section-4.1-4" class="pilcrow">¶</a></p>
+<p id="section-4.1-5">Note that TD value will be affected by the clock drift, the difference in the system time of the two clocks at the sender and at the receiver.<a href="#section-4.1-5" class="pilcrow">¶</a></p>
+<p id="section-4.1-6">Minimum (TD_MIN) and maximum (TD_MAX) delay estimates <span class="bcp14">MUST</span> be reset to "not available" (N/A)
+at the start of each measurement period, while the smoothed value (TD_SMOOTHED) <span class="bcp14">MUST NOT</span> be reset and the calculation <span class="bcp14">SHOULD</span> continue during the entire experiment.
+Here and throughout the current document, smoothing means applying an exponentially weighted moving average (EWMA).<a href="#section-4.1-6" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.1-7">
+<pre>
+TD_MIN = MIN(TD_MIN, TD);
+TD_MAX = MAX(TD_MAX, TD);
+TD_SMOOTHED = EWMA(TD_SMOOTHED, TD).
+</pre><a href="#section-4.1-7" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="jitter-rfc3550">
+<section id="section-4.2">
+        <h3 id="name-interarrival-jitter">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-interarrival-jitter" class="section-name selfRef">Interarrival Jitter</a>
+        </h3>
+<p id="section-4.2-1">Interarrival Jitter is calculated as defined in <span>[<a href="#RFC3550" class="cite xref">RFC3550</a>]</span>. It is based on the concept of the Relative Transit Time between pairs of consecutive payloads
+received not necessarily in sequence (meaning that reordering is ignored), and is defined to be the smoothed average of the difference in payloads spacing
+at the receiver compared to the sender for a pair of payloads.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<p id="section-4.2-2">The calculation is based on the Monotonic Clock Timestamp <a href="#payload-structure" class="auto internal xref">Figure 1</a> extracted from the payload. As jitter is calculated as an EWMA of delay variations,
+it <span class="bcp14">MUST NOT</span> be reset at the start of each measurement period.<a href="#section-4.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="ts-df">
+<section id="section-4.3">
+        <h3 id="name-time-stamped-delay-factor-t">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-time-stamped-delay-factor-t" class="section-name selfRef">Time-Stamped Delay Factor (TS-DF)</a>
+        </h3>
+<p id="section-4.3-1">Time-Stamped Delay Factor metric is calculated as defined in <span>[<a href="#EBU3337" class="cite xref">EBU3337</a>]</span>.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<p id="section-4.3-2">The calculation of TS-DF samples is based on the Monotonic Clock Timestamp <a href="#payload-structure" class="auto internal xref">Figure 1</a> extracted from the payload.
+Unlike the algorithm defined in <span>[<a href="#RFC3550" class="cite xref">RFC3550</a>]</span>, TS-DF one does not use a smoothing factor
+and therefore gives a very accurate instantaneous result.<a href="#section-4.3-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="received-payloads">
+<section id="section-4.4">
+        <h3 id="name-total-number-of-received-pa">
+<a href="#section-4.4" class="section-number selfRef">4.4. </a><a href="#name-total-number-of-received-pa" class="section-name selfRef">Total Number of Received Payloads</a>
+        </h3>
+<p id="section-4.4-1">A counter is initialized with zero and incremented on each payload read. The value <span class="bcp14">MUST NOT</span> be reset at the start of each measurement period.<a href="#section-4.4-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="received-groups">
+<section id="section-4.5">
+        <h3 id="name-total-number-of-received-gr">
+<a href="#section-4.5" class="section-number selfRef">4.5. </a><a href="#name-total-number-of-received-gr" class="section-name selfRef">Total Number of Received Groups</a>
+        </h3>
+<p id="section-4.5-1">A counter is initialized with zero and incremented on each payload group read. The value <span class="bcp14">MUST NOT</span> be reset at the start of each measurement period.<a href="#section-4.5-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="missing-payloads">
+<section id="section-4.6">
+        <h3 id="name-total-number-of-missing-pay">
+<a href="#section-4.6" class="section-number selfRef">4.6. </a><a href="#name-total-number-of-missing-pay" class="section-name selfRef">Total Number of Missing Payloads</a>
+        </h3>
+<p id="section-4.6-1">A counter is initialized with zero and is incremented each time a discontinuity in consecutive payloads sequence numbers (Payload Sequence Number <a href="#payload-structure" class="auto internal xref">Figure 1</a>)
+is determined. Missing sequence numbers <span class="bcp14">MUST</span> be recorded. The counter is decremented by one once a payload with missing sequence number is received out of order.
+The value <span class="bcp14">MUST NOT</span> be reset at the start of each measurement period.<a href="#section-4.6-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="missing-grous">
+<section id="section-4.7">
+        <h3 id="name-total-number-of-missing-gro">
+<a href="#section-4.7" class="section-number selfRef">4.7. </a><a href="#name-total-number-of-missing-gro" class="section-name selfRef">Total Number of Missing Groups</a>
+        </h3>
+<p id="section-4.7-1">The same as the Total Number of Missing Payloads, but for payload groups.<a href="#section-4.7-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="reordered-payloads">
+<section id="section-4.8">
+        <h3 id="name-total-number-of-reordered-p">
+<a href="#section-4.8" class="section-number selfRef">4.8. </a><a href="#name-total-number-of-reordered-p" class="section-name selfRef">Total Number of Reordered Payloads and Reordering Distance</a>
+        </h3>
+<p id="section-4.8-1">A counter is initialized with zero and is incremented each time the Payload Sequence Number <a href="#payload-structure" class="auto internal xref">Figure 1</a> value
+precedes the next Expected Payload Sequence Number.<a href="#section-4.8-1" class="pilcrow">¶</a></p>
+<p id="section-4.8-2">The next Expected Payload Sequence Number is initialized with zero and is updated if the Payload Sequence Number
+value of a received payload incremented by one exceeds the current Expected Payload Sequence Number value.<a href="#section-4.8-2" class="pilcrow">¶</a></p>
+<p id="section-4.8-3">The value <span class="bcp14">MUST NOT</span> be reset at the start of each measurement period.<a href="#section-4.8-3" class="pilcrow">¶</a></p>
+<p id="section-4.8-4">TODO: Reordering Distance.<a href="#section-4.8-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="the-number-of-corrupted-payloads">
+<section id="section-4.9">
+        <h3 id="name-the-number-of-corrupted-pay">
+<a href="#section-4.9" class="section-number selfRef">4.9. </a><a href="#name-the-number-of-corrupted-pay" class="section-name selfRef">The Number of Corrupted Payloads</a>
+        </h3>
+<p id="section-4.9-1">TODO: Add description.<a href="#section-4.9-1" class="pilcrow">¶</a></p>
+<p id="section-4.9-2">The payload is corrupted, meaning contents were altered. This <span class="bcp14">MUST NOT</span> happen, but still <span class="bcp14">MUST</span> be checked.<a href="#section-4.9-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="the-number-of-partial-payloads">
+<section id="section-4.10">
+        <h3 id="name-the-number-of-partial-paylo">
+<a href="#section-4.10" class="section-number selfRef">4.10. </a><a href="#name-the-number-of-partial-paylo" class="section-name selfRef">The Number of Partial Payloads</a>
+        </h3>
+<p id="section-4.10-1">TODO: Add description.<a href="#section-4.10-1" class="pilcrow">¶</a></p>
+<p id="section-4.10-2">The payload is only partially received.<a href="#section-4.10-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="the-number-of-partial-groups">
+<section id="section-4.11">
+        <h3 id="name-the-number-of-partial-group">
+<a href="#section-4.11" class="section-number selfRef">4.11. </a><a href="#name-the-number-of-partial-group" class="section-name selfRef">The Number of Partial Groups</a>
+        </h3>
+<p id="section-4.11-1">TODO: Add description.<a href="#section-4.11-1" class="pilcrow">¶</a></p>
+<p id="section-4.11-2">A group of payloads is only partially received.<a href="#section-4.11-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="the-number-of-duplicated-payloads">
+<section id="section-4.12">
+        <h3 id="name-the-number-of-duplicated-pa">
+<a href="#section-4.12" class="section-number selfRef">4.12. </a><a href="#name-the-number-of-duplicated-pa" class="section-name selfRef">The Number of Duplicated Payloads</a>
+        </h3>
+<p id="section-4.12-1">TODO: Add description.<a href="#section-4.12-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-5">
+      <h2 id="name-security-considerations">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-5-1">TODO Security<a href="#section-5-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-6">
+      <h2 id="name-iana-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-6-1">This document has no IANA actions.<a href="#section-6-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-7">
+      <h2 id="name-references">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-7.1">
+        <h3 id="name-normative-references">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc2119">https://www.rfc-editor.org/rfc/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC3550">[RFC3550]</dt>
+        <dd>
+<span class="refAuthor">Schulzrinne, H.</span>, <span class="refAuthor">Casner, S.</span>, <span class="refAuthor">Frederick, R.</span>, and <span class="refAuthor">V. Jacobson</span>, <span class="refTitle">"RTP: A Transport Protocol for Real-Time Applications"</span>, <span class="seriesInfo">STD 64</span>, <span class="seriesInfo">RFC 3550</span>, <span class="seriesInfo">DOI 10.17487/RFC3550</span>, <time datetime="2003-07" class="refDate">July 2003</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc3550">https://www.rfc-editor.org/rfc/rfc3550</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5905">[RFC5905]</dt>
+        <dd>
+<span class="refAuthor">Mills, D.</span>, <span class="refAuthor">Martin, J., Ed.</span>, <span class="refAuthor">Burbank, J.</span>, and <span class="refAuthor">W. Kasch</span>, <span class="refTitle">"Network Time Protocol Version 4: Protocol and Algorithms Specification"</span>, <span class="seriesInfo">RFC 5905</span>, <span class="seriesInfo">DOI 10.17487/RFC5905</span>, <time datetime="2010-06" class="refDate">June 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc5905">https://www.rfc-editor.org/rfc/rfc5905</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8877">[RFC8877]</dt>
+        <dd>
+<span class="refAuthor">Mizrahi, T.</span>, <span class="refAuthor">Fabini, J.</span>, and <span class="refAuthor">A. Morton</span>, <span class="refTitle">"Guidelines for Defining Packet Timestamps"</span>, <span class="seriesInfo">RFC 8877</span>, <span class="seriesInfo">DOI 10.17487/RFC8877</span>, <time datetime="2020-09" class="refDate">September 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8877">https://www.rfc-editor.org/rfc/rfc8877</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9000">[RFC9000]</dt>
+        <dd>
+<span class="refAuthor">Iyengar, J., Ed.</span> and <span class="refAuthor">M. Thomson, Ed.</span>, <span class="refTitle">"QUIC: A UDP-Based Multiplexed and Secure Transport"</span>, <span class="seriesInfo">RFC 9000</span>, <span class="seriesInfo">DOI 10.17487/RFC9000</span>, <time datetime="2021-05" class="refDate">May 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9000">https://www.rfc-editor.org/rfc/rfc9000</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9221">[RFC9221]</dt>
+        <dd>
+<span class="refAuthor">Pauly, T.</span>, <span class="refAuthor">Kinnear, E.</span>, and <span class="refAuthor">D. Schinazi</span>, <span class="refTitle">"An Unreliable Datagram Extension to QUIC"</span>, <span class="seriesInfo">RFC 9221</span>, <span class="seriesInfo">DOI 10.17487/RFC9221</span>, <time datetime="2022-03" class="refDate">March 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9221">https://www.rfc-editor.org/rfc/rfc9221</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="EBU3337">[EBU3337]</dt>
+        <dd>
+<span class="refAuthor">The European Broadcasting Union</span>, <span class="refTitle">"TS-DF Algorithm to Measure Network Jitter on RTP Streams"</span>, <span>n.d.</span>, <span>&lt;<a href="https://tech.ebu.ch/publications/tech3337">https://tech.ebu.ch/publications/tech3337</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+      <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8174">https://www.rfc-editor.org/rfc/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-7.2">
+        <h3 id="name-informative-references">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="I-D.kpugin-rush">[I-D.kpugin-rush]</dt>
+        <dd>
+<span class="refAuthor">Pugin, K.</span>, <span class="refAuthor">Frindell, A.</span>, <span class="refAuthor">Cenzano, J.</span>, and <span class="refAuthor">J. Weissman</span>, <span class="refTitle">"RUSH - Reliable (unreliable) streaming protocol"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-kpugin-rush-01</span>, <time datetime="2022-03-07" class="refDate">7 March 2022</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-kpugin-rush-01">https://datatracker.ietf.org/doc/html/draft-kpugin-rush-01</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.lcurley-warp">[I-D.lcurley-warp]</dt>
+        <dd>
+<span class="refAuthor">Curley, L.</span>, <span class="refTitle">"Warp - Segmented Live Media Transport"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-lcurley-warp-01</span>, <time datetime="2022-07-09" class="refDate">9 July 2022</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-lcurley-warp-01">https://datatracker.ietf.org/doc/html/draft-lcurley-warp-01</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.sharabayko-srt-over-quic">[I-D.sharabayko-srt-over-quic]</dt>
+        <dd>
+<span class="refAuthor">Sharabayko, M.</span> and <span class="refAuthor">M. Sharabayko</span>, <span class="refTitle">"Tunnelling SRT over QUIC"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-sharabayko-srt-over-quic-00</span>, <time datetime="2021-07-28" class="refDate">28 July 2021</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-sharabayko-srt-over-quic-00">https://datatracker.ietf.org/doc/html/draft-sharabayko-srt-over-quic-00</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-avtcore-rtp-over-quic">[I-D.ietf-avtcore-rtp-over-quic]</dt>
+        <dd>
+<span class="refAuthor">Ott, J.</span> and <span class="refAuthor">M. Engelbart</span>, <span class="refTitle">"RTP over QUIC"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-avtcore-rtp-over-quic-00</span>, <time datetime="2022-07-26" class="refDate">26 July 2022</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-avtcore-rtp-over-quic-00">https://datatracker.ietf.org/doc/html/draft-ietf-avtcore-rtp-over-quic-00</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.jennings-moq-quicr-arch">[I-D.jennings-moq-quicr-arch]</dt>
+        <dd>
+<span class="refAuthor">Jennings, C.</span> and <span class="refAuthor">S. Nandakumar</span>, <span class="refTitle">"QuicR - Media Delivery Protocol over QUIC"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-jennings-moq-quicr-arch-01</span>, <time datetime="2022-07-11" class="refDate">11 July 2022</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-jennings-moq-quicr-arch-01">https://datatracker.ietf.org/doc/html/draft-jennings-moq-quicr-arch-01</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.gruessing-moq-requirements">[I-D.gruessing-moq-requirements]</dt>
+        <dd>
+<span class="refAuthor">Gruessing, J.</span> and <span class="refAuthor">S. Dawkins</span>, <span class="refTitle">"Media Over QUIC - Use Cases and Requirements for Media Transport Protocol Design"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-gruessing-moq-requirements-02</span>, <time datetime="2022-07-11" class="refDate">11 July 2022</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-gruessing-moq-requirements-02">https://datatracker.ietf.org/doc/html/draft-gruessing-moq-requirements-02</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.shi-quic-dtp">[I-D.shi-quic-dtp]</dt>
+        <dd>
+<span class="refAuthor">Cui, Y.</span>, <span class="refAuthor">Ma, C.</span>, <span class="refAuthor">Shi, H.</span>, <span class="refAuthor">Zheng, K.</span>, and <span class="refAuthor">W. Wang</span>, <span class="refTitle">"Deadline-aware Transport Protocol"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-shi-quic-dtp-06</span>, <time datetime="2022-07-26" class="refDate">26 July 2022</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-shi-quic-dtp-06">https://datatracker.ietf.org/doc/html/draft-shi-quic-dtp-06</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.sharabayko-srt">[I-D.sharabayko-srt]</dt>
+        <dd>
+<span class="refAuthor">Sharabayko, M.</span>, <span class="refAuthor">Sharabayko, M.</span>, <span class="refAuthor">Dube, J.</span>, <span class="refAuthor">Kim, J.</span>, and <span class="refAuthor">J. Kim</span>, <span class="refTitle">"The SRT Protocol"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-sharabayko-srt-01</span>, <time datetime="2021-09-07" class="refDate">7 September 2021</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-sharabayko-srt-01">https://datatracker.ietf.org/doc/html/draft-sharabayko-srt-01</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-quic-qlog-main-schema">[I-D.ietf-quic-qlog-main-schema]</dt>
+        <dd>
+<span class="refAuthor">Marx, R.</span>, <span class="refAuthor">Niccolini, L.</span>, and <span class="refAuthor">M. Seemann</span>, <span class="refTitle">"Main logging schema for qlog"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-quic-qlog-main-schema-03</span>, <time datetime="2022-08-31" class="refDate">31 August 2022</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-quic-qlog-main-schema-03">https://datatracker.ietf.org/doc/html/draft-ietf-quic-qlog-main-schema-03</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.huitema-quic-ts">[I-D.huitema-quic-ts]</dt>
+      <dd>
+<span class="refAuthor">Huitema, C.</span>, <span class="refTitle">"Quic Timestamps For Measuring One-Way Delays"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-huitema-quic-ts-08</span>, <time datetime="2022-08-28" class="refDate">28 August 2022</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-huitema-quic-ts-08">https://datatracker.ietf.org/doc/html/draft-huitema-quic-ts-08</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="acknowledgments">
+<section id="appendix-A">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-A-1">TODO acknowledge.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Maxim Sharabayko</span></div>
+<div dir="auto" class="left"><span class="org">Haivision Network Video, GmbH</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:maxsharabayko@haivision.com" class="email">maxsharabayko@haivision.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Maria Sharabayko</span></div>
+<div dir="auto" class="left"><span class="org">Haivision Network Video, GmbH</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:msharabayko@haivision.com" class="email">msharabayko@haivision.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>

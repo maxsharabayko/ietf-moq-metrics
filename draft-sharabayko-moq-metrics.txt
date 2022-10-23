@@ -1,0 +1,550 @@
+
+
+
+
+moq                                                     M. P. Sharabayko
+Internet-Draft                                          M. A. Sharabayko
+Intended status: Informational             Haivision Network Video, GmbH
+Expires: 26 April 2023                                   23 October 2022
+
+
+          Estimating Transmission Metrics on a QUIC Connection
+                  draft-sharabayko-moq-metrics-latest
+
+Abstract
+
+   This document defines an approach of objectively measuring
+   transmission such metrics like delay, jitter, and loss-related
+   transmission metrics for a QUIC [RFC9000] connection using an
+   artificially generated payload of a specific structure.  The
+   measurement is to be carried on an application level to be protocol-
+   independent.
+
+Status of This Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at https://datatracker.ietf.org/drafts/current/.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   This Internet-Draft will expire on 26 April 2023.
+
+Copyright Notice
+
+   Copyright (c) 2022 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents (https://trustee.ietf.org/
+   license-info) in effect on the date of publication of this document.
+   Please review these documents carefully, as they describe your rights
+   and restrictions with respect to this document.
+
+Table of Contents
+
+   1.  Introduction
+     1.1.  Requirements Notation
+   2.  Conventions and Definitions
+   3.  Payload Format
+   4.  Performance Metrics
+     4.1.  Transmission Delay
+     4.2.  Interarrival Jitter
+     4.3.  Time-Stamped Delay Factor (TS-DF)
+     4.4.  Total Number of Received Payloads
+     4.5.  Total Number of Received Groups
+     4.6.  Total Number of Missing Payloads
+     4.7.  Total Number of Missing Groups
+     4.8.  Total Number of Reordered Payloads and Reordering Distance
+     4.9.  The Number of Corrupted Payloads
+     4.10. The Number of Partial Payloads
+     4.11. The Number of Partial Groups
+     4.12. The Number of Duplicated Payloads
+   5.  Security Considerations
+   6.  IANA Considerations
+   7.  References
+     7.1.  Normative References
+     7.2.  Informative References
+   Acknowledgments
+   Authors' Addresses
+
+1.  Introduction
+
+   Establishment of the Media over QUIC working group acknowledges the
+   relevance of live media contribution and distribution and encourages
+   discussions on the use cases to be considered
+   [I-D.gruessing-moq-requirements].  Several proposals complement to
+   those discussions.  Most are currently based on QUIC streams
+   [I-D.lcurley-warp], [I-D.kpugin-rush], [I-D.jennings-moq-quicr-arch],
+   [I-D.shi-quic-dtp].  QUIC datagrams are yet to be considered within
+   the group, but some related work includes
+   [I-D.sharabayko-srt-over-quic], [I-D.jennings-moq-quicr-arch],
+   [I-D.ietf-avtcore-rtp-over-quic].
+
+   Thus, an important task is to evaluate solutions and algorithms being
+   proposed.  For example for live media contribution, where processing
+   of data takes place in real time, it is important to estimate
+   transmission delay and delay variation (or jitter), to determine data
+   loss and reordering, as well as to calculate other transmission
+   metrics.  The lower the observed jitter level is, the smaller is the
+   decoder buffer needed, and the higher is the confidence in an
+   expected transmission latency.
+
+   The current draft discusses an approach of objectively measuring
+   transmission delay, jitter, and other performance metrics Section 4
+   for any media protocol over a QUIC connection using an artificially
+   generated payload of a specific structure Section 3.  Both streams
+   [RFC9000] and unreliable datagrams [RFC9221] are to be supported.
+   However, it is important to highlight the difference between the two.
+   Thus a sub goal is to try to find a universal approach to evaluate
+   performance metrics for both streams and datagrams, providing a
+   common basis for comparison.
+
+   To be independent from a media protocol over QUIC, the measurement is
+   to be carried on an application level, probably involving QUIC-level
+   statistics where needed.
+
+   This approach could be used during development of the _Media over
+   QUIC_ protocol to:
+
+   *  compare the independent proposals and implementations of the
+      _Media over QUIC_ protocol,
+
+   *  perform regression testing of a certain implementation or
+      proposal,
+
+   *  evaluate various congestion control schemes for live media,
+
+   *  maybe compare _Media over QUIC_ protocol performance against other
+      protocols, e.g.  RTP over QUIC [I-D.ietf-avtcore-rtp-over-quic] or
+      SRT [I-D.sharabayko-srt].
+
+   QUIC, as a protocol, provides a powerful set of statistics which can
+   be used in addition to the defined procedure.  There are, however,
+   several things to keep in mind:
+
+   *  Independent QUIC transport implementations do not necessarily
+      support the same set of statistics and the format isn't
+      necessarily the same among different libraries.  Although
+      [I-D.ietf-quic-qlog-main-schema] might be helpful in a way.
+
+   *  QUIC packets themselves do not have a timestamp field to allow the
+      measurement of one-way delays.  Although there is a related draft
+      proposal [I-D.huitema-quic-ts], which proposes the definition of a
+      TIMESTAMP frame.
+
+1.1.  Requirements Notation
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [RFC2119].
+
+2.  Conventions and Definitions
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+   "OPTIONAL" in this document are to be interpreted as described in
+   BCP 14 [RFC2119] [RFC8174] when, and only when, they appear in all
+   capitals, as shown here.
+
+3.  Payload Format
+
+   A payload of a specific format Figure 1 MUST be artificially
+   generated to enable the calculation of performance metrics at the
+   receiver side.
+
+   The artificially generated payload by its size SHOULD roughly
+   represent a media unit that a hypothetical decoder can decode.  For
+   example, in case of a video stream, one payload can represent the
+   whole frame or a slice of that frame that a decoder can process.  The
+   arrival of the whole frame forms the actual delay for a viewer/
+   decoder.  Even if a frame is partially received earlier, it will be
+   decoded and presented with the reception of a last macroblock or with
+   dropping of the remaining parts of the frame.
+
+   The artificially generated payload MUST provide means of estimating
+   transmission delay and full or partial loss of the payload.
+
+   The artificially generated payload SHOULD be of a variable length to
+   represent different sizes of various types of payload and various
+   types of video frames (I, P, B).
+
+   The approach MUST provide a common basis for comparison independent
+   (or as independent as possible) of whether QUIC streams or datagrams
+   are used as a transport.
+
+      0                   1                   2                   3
+      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |                     Payload Sequence Number                   |
+     |                           (64 bit)                            |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |P P|                  Group Sequence Number                    |
+     |                                                               |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |                       NTP 64-Bit Timestamp                    |
+     |                           (64 bit)                            |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |                    Monotonic Clock Timestamp                  |
+     |                           (64 bit)                            |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |                        Payload Length                         |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |                         MD5 Checksum                          |
+     |                                                               |
+     |                                                               |
+     |                                                               |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |                       Remaining Payload                       |
+     |                                                               |
+                                   (...)
+     |                                                               |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+                        Figure 1: Payload Structure
+
+   Payload Sequence Number: 64 bits.  A sequential number of the
+      payload.  Starts from zero and is incremented for every payload
+      that follows.
+
+   PP: 2 bits.  Payload position flag.  This field indicates the
+      position of the payload sequence in the group of payload
+      sequences.  The value "10b" means the first payload sequence of
+      the group. "00b" indicates a packet in the middle of the group.
+      "01b" designates the last packet.  If a single payload packet
+      forms the whole group, the value is "11b".
+
+   Group Sequence Number: 62 bits.  A sequential number of the payload
+      group.  Starts from zero and is incremented for every payload
+      group that follows.
+
+   NTP 64-Bit Timestamp: 64 bits.  NTP 64-bit system clock timestamp
+      [RFC5905] [RFC8877] of the moment when a payload has been
+      generated meaning the payload generation has finished.
+
+   Monotonic Clock Timestamp: 64 bits.  Monotonic clock timestamp of the
+      moment when a payload has been generated.  Represents microseconds
+      elapsed since monotonic clock epoch.
+
+   Payload Length: 32 bits.  The full length of the payload (including
+      preceding "Payload Sequence Number" and both timestamp fields).
+
+   MD5 Checksum: 128 bits.  A hash value to confirm the payload
+      integrity.  Calculated for the whole message with the SHA-128
+      checksum field zeroed out.
+
+   Remaining Payload: variable length.  The remaining payload of
+      variable length.  Randomly generated sequence of bytes.  MAY be
+      generated as a sequence of 8-bit integers starting with value of
+      the remainder after dividing the Payload Sequence Number by 32 and
+      followed by sequentially increasing values.
+
+   For example, to emulate the "one video frame per QUIC stream"
+   approach the payload length MUST account for the entire stream.  As
+   stream data is sent in the form of STREAM frames, the very first
+   frame will contain Payload Sequence Number, PP flags, Group Sequence
+   Number and the rest fields of the header, as well as some of the
+   remaining payload data.  Consequent STREAM frames will carry the rest
+   of the payload.  Both the Payload Sequence Number and the Group
+   Sequence Number fields MUST be increased for each payload.
+
+   To emulate the "one GOP per QUIC stream" approach, one QUIC stream
+   will transport several payloads of different lengths.  Both the
+   Payload Sequence Number and the Group Sequence Number fields MUST be
+   increased for each payload.
+
+   To emulate the "video frame over QUIC datagrams" approach the payload
+   length MUST fit in a single DATAGRAM frame.  The Payload Sequence
+   Number field MUST be increased for each sent DATAGRAM frame.  A
+   sequence of payloads SHOULD have the same Group Sequence Number, with
+   the Payload Position Flag marking the start, the middle, and the end
+   of the group sequence.  Thus the whole group sequence marks a
+   represent video frame.
+
+4.  Performance Metrics
+
+   The calculation of the following metrics is suggested to be included
+   in the scope:
+
+   *  Transmission Delay (or Latency) Section 4.1,
+
+   *  Interarrival Jitter Section 4.2,
+
+   *  Time-Stamped Delay Factor (TS-DF) Section 4.3,
+
+   *  Total Number of Received Payloads Section 4.4,
+
+   *  Total Number of Missing Payloads Section 4.6,
+
+   *  Total Number of Reordered Payloads and Reordering Distance
+      Section 4.8,
+
+   *  and others metrics as defined below.
+
+   The RECOMMENDED measurement period is 1 second, however, alternative
+   period length is also possible.  This value is dictated by the TS-DF
+   metric specification [EBU3337].
+
+4.1.  Transmission Delay
+
+   Transmission Delay (or Latency) is measured based on the system clock
+   (NTP 64-Bit Timestamp Figure 1).  It is RECOMMENDED to synchronize
+   the clocks on both sender and receiver machines before an experiment
+   so that an error associated with a clock drift is as less as
+   possible.
+
+   Transmission Delay (TD) sample is calculated at the receiver side at
+   the moment a payload group is received by an application:
+
+   TD = T_NTP_RCV - T_NTP_SND
+
+   where - T_NTP_RCV is the system clock time when the last payload of a
+   group arrives at the receiver. - T_NTP_SND is the NTP 64-Bit
+   Timestamp value extracted from the same payload.
+
+   Note that TD value will be affected by the clock drift, the
+   difference in the system time of the two clocks at the sender and at
+   the receiver.
+
+   Minimum (TD_MIN) and maximum (TD_MAX) delay estimates MUST be reset
+   to "not available" (N/A) at the start of each measurement period,
+   while the smoothed value (TD_SMOOTHED) MUST NOT be reset and the
+   calculation SHOULD continue during the entire experiment.  Here and
+   throughout the current document, smoothing means applying an
+   exponentially weighted moving average (EWMA).
+
+   TD_MIN = MIN(TD_MIN, TD);
+   TD_MAX = MAX(TD_MAX, TD);
+   TD_SMOOTHED = EWMA(TD_SMOOTHED, TD).
+
+4.2.  Interarrival Jitter
+
+   Interarrival Jitter is calculated as defined in [RFC3550].  It is
+   based on the concept of the Relative Transit Time between pairs of
+   consecutive payloads received not necessarily in sequence (meaning
+   that reordering is ignored), and is defined to be the smoothed
+   average of the difference in payloads spacing at the receiver
+   compared to the sender for a pair of payloads.
+
+   The calculation is based on the Monotonic Clock Timestamp Figure 1
+   extracted from the payload.  As jitter is calculated as an EWMA of
+   delay variations, it MUST NOT be reset at the start of each
+   measurement period.
+
+4.3.  Time-Stamped Delay Factor (TS-DF)
+
+   Time-Stamped Delay Factor metric is calculated as defined in
+   [EBU3337].
+
+   The calculation of TS-DF samples is based on the Monotonic Clock
+   Timestamp Figure 1 extracted from the payload.  Unlike the algorithm
+   defined in [RFC3550], TS-DF one does not use a smoothing factor and
+   therefore gives a very accurate instantaneous result.
+
+4.4.  Total Number of Received Payloads
+
+   A counter is initialized with zero and incremented on each payload
+   read.  The value MUST NOT be reset at the start of each measurement
+   period.
+
+4.5.  Total Number of Received Groups
+
+   A counter is initialized with zero and incremented on each payload
+   group read.  The value MUST NOT be reset at the start of each
+   measurement period.
+
+4.6.  Total Number of Missing Payloads
+
+   A counter is initialized with zero and is incremented each time a
+   discontinuity in consecutive payloads sequence numbers (Payload
+   Sequence Number Figure 1) is determined.  Missing sequence numbers
+   MUST be recorded.  The counter is decremented by one once a payload
+   with missing sequence number is received out of order.  The value
+   MUST NOT be reset at the start of each measurement period.
+
+4.7.  Total Number of Missing Groups
+
+   The same as the Total Number of Missing Payloads, but for payload
+   groups.
+
+4.8.  Total Number of Reordered Payloads and Reordering Distance
+
+   A counter is initialized with zero and is incremented each time the
+   Payload Sequence Number Figure 1 value precedes the next Expected
+   Payload Sequence Number.
+
+   The next Expected Payload Sequence Number is initialized with zero
+   and is updated if the Payload Sequence Number value of a received
+   payload incremented by one exceeds the current Expected Payload
+   Sequence Number value.
+
+   The value MUST NOT be reset at the start of each measurement period.
+
+   TODO: Reordering Distance.
+
+4.9.  The Number of Corrupted Payloads
+
+   TODO: Add description.
+
+   The payload is corrupted, meaning contents were altered.  This MUST
+   NOT happen, but still MUST be checked.
+
+4.10.  The Number of Partial Payloads
+
+   TODO: Add description.
+
+   The payload is only partially received.
+
+4.11.  The Number of Partial Groups
+
+   TODO: Add description.
+
+   A group of payloads is only partially received.
+
+4.12.  The Number of Duplicated Payloads
+
+   TODO: Add description.
+
+5.  Security Considerations
+
+   TODO Security
+
+6.  IANA Considerations
+
+   This document has no IANA actions.
+
+7.  References
+
+7.1.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119,
+              DOI 10.17487/RFC2119, March 1997,
+              <https://www.rfc-editor.org/rfc/rfc2119>.
+
+   [RFC3550]  Schulzrinne, H., Casner, S., Frederick, R., and V.
+              Jacobson, "RTP: A Transport Protocol for Real-Time
+              Applications", STD 64, RFC 3550, DOI 10.17487/RFC3550,
+              July 2003, <https://www.rfc-editor.org/rfc/rfc3550>.
+
+   [RFC5905]  Mills, D., Martin, J., Ed., Burbank, J., and W. Kasch,
+              "Network Time Protocol Version 4: Protocol and Algorithms
+              Specification", RFC 5905, DOI 10.17487/RFC5905, June 2010,
+              <https://www.rfc-editor.org/rfc/rfc5905>.
+
+   [RFC8877]  Mizrahi, T., Fabini, J., and A. Morton, "Guidelines for
+              Defining Packet Timestamps", RFC 8877,
+              DOI 10.17487/RFC8877, September 2020,
+              <https://www.rfc-editor.org/rfc/rfc8877>.
+
+   [RFC9000]  Iyengar, J., Ed. and M. Thomson, Ed., "QUIC: A UDP-Based
+              Multiplexed and Secure Transport", RFC 9000,
+              DOI 10.17487/RFC9000, May 2021,
+              <https://www.rfc-editor.org/rfc/rfc9000>.
+
+   [RFC9221]  Pauly, T., Kinnear, E., and D. Schinazi, "An Unreliable
+              Datagram Extension to QUIC", RFC 9221,
+              DOI 10.17487/RFC9221, March 2022,
+              <https://www.rfc-editor.org/rfc/rfc9221>.
+
+   [EBU3337]  The European Broadcasting Union, "TS-DF Algorithm to
+              Measure Network Jitter on RTP Streams", n.d.,
+              <https://tech.ebu.ch/publications/tech3337>.
+
+   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
+              2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
+              May 2017, <https://www.rfc-editor.org/rfc/rfc8174>.
+
+7.2.  Informative References
+
+   [I-D.kpugin-rush]
+              Pugin, K., Frindell, A., Cenzano, J., and J. Weissman,
+              "RUSH - Reliable (unreliable) streaming protocol", Work in
+              Progress, Internet-Draft, draft-kpugin-rush-01, 7 March
+              2022, <https://datatracker.ietf.org/doc/html/draft-kpugin-
+              rush-01>.
+
+   [I-D.lcurley-warp]
+              Curley, L., "Warp - Segmented Live Media Transport", Work
+              in Progress, Internet-Draft, draft-lcurley-warp-01, 9 July
+              2022, <https://datatracker.ietf.org/doc/html/draft-
+              lcurley-warp-01>.
+
+   [I-D.sharabayko-srt-over-quic]
+              Sharabayko, M. and M. Sharabayko, "Tunnelling SRT over
+              QUIC", Work in Progress, Internet-Draft, draft-sharabayko-
+              srt-over-quic-00, 28 July 2021,
+              <https://datatracker.ietf.org/doc/html/draft-sharabayko-
+              srt-over-quic-00>.
+
+   [I-D.ietf-avtcore-rtp-over-quic]
+              Ott, J. and M. Engelbart, "RTP over QUIC", Work in
+              Progress, Internet-Draft, draft-ietf-avtcore-rtp-over-
+              quic-00, 26 July 2022,
+              <https://datatracker.ietf.org/doc/html/draft-ietf-avtcore-
+              rtp-over-quic-00>.
+
+   [I-D.jennings-moq-quicr-arch]
+              Jennings, C. and S. Nandakumar, "QuicR - Media Delivery
+              Protocol over QUIC", Work in Progress, Internet-Draft,
+              draft-jennings-moq-quicr-arch-01, 11 July 2022,
+              <https://datatracker.ietf.org/doc/html/draft-jennings-moq-
+              quicr-arch-01>.
+
+   [I-D.gruessing-moq-requirements]
+              Gruessing, J. and S. Dawkins, "Media Over QUIC - Use Cases
+              and Requirements for Media Transport Protocol Design",
+              Work in Progress, Internet-Draft, draft-gruessing-moq-
+              requirements-02, 11 July 2022,
+              <https://datatracker.ietf.org/doc/html/draft-gruessing-
+              moq-requirements-02>.
+
+   [I-D.shi-quic-dtp]
+              Cui, Y., Ma, C., Shi, H., Zheng, K., and W. Wang,
+              "Deadline-aware Transport Protocol", Work in Progress,
+              Internet-Draft, draft-shi-quic-dtp-06, 26 July 2022,
+              <https://datatracker.ietf.org/doc/html/draft-shi-quic-dtp-
+              06>.
+
+   [I-D.sharabayko-srt]
+              Sharabayko, M., Sharabayko, M., Dube, J., Kim, J., and J.
+              Kim, "The SRT Protocol", Work in Progress, Internet-Draft,
+              draft-sharabayko-srt-01, 7 September 2021,
+              <https://datatracker.ietf.org/doc/html/draft-sharabayko-
+              srt-01>.
+
+   [I-D.ietf-quic-qlog-main-schema]
+              Marx, R., Niccolini, L., and M. Seemann, "Main logging
+              schema for qlog", Work in Progress, Internet-Draft, draft-
+              ietf-quic-qlog-main-schema-03, 31 August 2022,
+              <https://datatracker.ietf.org/doc/html/draft-ietf-quic-
+              qlog-main-schema-03>.
+
+   [I-D.huitema-quic-ts]
+              Huitema, C., "Quic Timestamps For Measuring One-Way
+              Delays", Work in Progress, Internet-Draft, draft-huitema-
+              quic-ts-08, 28 August 2022,
+              <https://datatracker.ietf.org/doc/html/draft-huitema-quic-
+              ts-08>.
+
+Acknowledgments
+
+   TODO acknowledge.
+
+Authors' Addresses
+
+   Maxim Sharabayko
+   Haivision Network Video, GmbH
+   Email: maxsharabayko@haivision.com
+
+
+   Maria Sharabayko
+   Haivision Network Video, GmbH
+   Email: msharabayko@haivision.com

@@ -85,9 +85,16 @@ This approach could be used during development of the *Media over QUIC* protocol
 - evaluate the performance and efficiency of QUIC streams versus datagrams,
 - TODO(Maxim - If we decide to consider other protocols, not QUIC only): compare *Media over QUIC* protocol performance against other protocols.
 
-TODO (Maria or later): Why not to simply use QUIC statistics provided by the library. Provide motivation for these
+QUIC, as a protocol, provides a powerful set of statistics which can be used in addition to the defined procedure. There are, however, several things to keep in mind:
 
-// When a QUIC endpoint receives a valid DATAGRAM frame, it SHOULD
+- Independent QUIC transport implementations do not all necessarily support the same set of statistics and the format isn't necessarily the same among different libraries.
+- QUIC packets do not have a timestamp field to allow the measurement of one-way delays. There is an experimental draft {{TODO: https://datatracker.ietf.org/doc/draft-huitema-quic-ts/}}, however, which proposes the definition of a TIMESTAMP frame carrying the time at which a packet is sent.
+
+(TODO: this we could put as 2 separate paragraphs below the QUIC stats point to keep in mind)
+- An artificially generated payload {{payload-format}} may be of a random structure that allows to emulate various scenarios and agree on a set of test procedures and cases for the newly emerging protocol. (TODO Maxim: You can say here something about putting the whole gop inside, or 1 frame, or something like that. The idea is that we could emulate whatever we want and that the payload isn't limited to any size, etc.)
+- (TODO Maxim: Don't know, but let's discuss. Something related to the specifics of streams & datagrams. We need a way of adequately comparing transmission via streams vs datagrams. There are nuances. Like the calculation of metrics for datagrams would be per paсket, for streams - once the stream is fully delivered or??? )
+
+// TODO Remove (This is from QUIC datagrams I guess) When a QUIC endpoint receives a valid DATAGRAM frame, it SHOULD
    deliver the data to the application immediately, as long as it is
    able to process the frame and can store the contents in memory.
 

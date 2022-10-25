@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2022-10-23T02:04:40.188201+00:00",
+  "timestamp": "2022-10-25T02:13:14.317176+00:00",
   "repo": "maxsharabayko/ietf-moq-metrics",
   "labels": [
     {
@@ -56,7 +56,7 @@
       "id": "PR_kwDOIOGpP85BNxVZ",
       "title": "First set of corrections",
       "url": "https://github.com/maxsharabayko/ietf-moq-metrics/pull/1",
-      "state": "OPEN",
+      "state": "MERGED",
       "author": "mbakholdina",
       "authorAssociation": "COLLABORATOR",
       "assignees": [
@@ -65,17 +65,19 @@
       "labels": [],
       "body": "",
       "createdAt": "2022-10-20T17:19:08Z",
-      "updatedAt": "2022-10-21T16:01:23Z",
+      "updatedAt": "2022-10-23T13:17:01Z",
       "baseRepository": "maxsharabayko/ietf-moq-metrics",
       "baseRefName": "main",
       "baseRefOid": "197888a35e4ae6a9d07c953e1ce6c92205bd6bd6",
       "headRepository": "maxsharabayko/ietf-moq-metrics",
       "headRefName": "mbakholdina/review",
-      "headRefOid": "e919de03c7f0fef3f5db9bcc9adc938247404722",
-      "closedAt": null,
-      "mergedAt": null,
-      "mergedBy": null,
-      "mergeCommit": null,
+      "headRefOid": "5ae774d3665420897fe85fde2dd975435ce834ed",
+      "closedAt": "2022-10-23T13:16:59Z",
+      "mergedAt": "2022-10-23T13:16:59Z",
+      "mergedBy": "maxsharabayko",
+      "mergeCommit": {
+        "oid": "077070e41815c6c8c03353b17b9be72c31f4ce2e"
+      },
       "comments": [],
       "reviews": [
         {
